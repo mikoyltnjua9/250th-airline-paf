@@ -21,7 +21,7 @@ export default function EnrollMfaPage() {
   const [supabase] = useState(() => createClient());
   const router = useRouter();
 
-  const [qrSvg, setQrSvg] = useState<string | null>(null);
+  const [qrDataUri, setQrDataUri] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
   const [factorId, setFactorId] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -62,7 +62,7 @@ export default function EnrollMfaPage() {
       }
 
       setFactorId(data.id);
-      setQrSvg(data.totp.qr_code);
+      setQrDataUri(data.totp.qr_code);
       setSecret(data.totp.secret);
       setLoading(false);
     }
@@ -119,15 +119,19 @@ export default function EnrollMfaPage() {
 
             {loading ? (
               <Skeleton className="mx-auto h-48 w-48" />
-            ) : qrSvg ? (
+            ) : qrDataUri ? (
               <div className="flex flex-col items-center gap-3">
-                <div
-                  className="h-48 w-48 rounded-md border bg-white p-2 [&_svg]:h-full [&_svg]:w-full"
-                  dangerouslySetInnerHTML={{ __html: qrSvg }}
+                {/* eslint-disable-next-line @next/next/no-img-element -- qrDataUri
+                    is a data: URI from Supabase, not a static asset next/image can optimize */}
+                <img
+                  src={qrDataUri}
+                  alt="Scan with your authenticator app"
+                  className="h-48 w-48 rounded-md border bg-white p-2"
                 />
                 {secret && (
                   <p className="break-all text-center text-xs text-muted-foreground">
-                    Can&apos;t scan? Enter manually:{" "}
+                    Can&apos;t scan the QR code? Type this setup key into your
+                    authenticator app instead:{" "}
                     <span className="font-mono">{secret}</span>
                   </p>
                 )}
