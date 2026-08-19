@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isRateLimited, clientIp } from "@/lib/rate-limit";
 
 const INACTIVITY_TIMEOUT_MS =
   (Number(process.env.INACTIVITY_TIMEOUT_MINUTES) || 15) * 60_000;
@@ -65,6 +66,14 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (isPublicRoute(pathname)) {
+    // No login gate here by design (that's the point of this route), so
+    // this is the only thing standing between it and casual scraping.
+    if (isRateLimited(`verify:${clientIp(request)}`)) {
+      return new NextResponse(
+        "Too many verification requests from this connection. Please try again in a few minutes.",
+        { status: 429, headers: { "content-type": "text/plain" } },
+      );
+    }
     return supabaseResponse;
   }
 

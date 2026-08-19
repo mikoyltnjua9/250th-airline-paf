@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PilotAvatar } from "@/components/pilots/pilot-avatar";
+import { VerifyQr } from "@/components/pilots/verify-qr";
 import { StatusBadge, LicenseStatusBadge, StanevalStatusBadge } from "@/components/status-badge";
 import { getPilotProfile } from "@/lib/pilots/queries";
 import { currencyStatus, CURRENCY_ITEM_LABELS } from "@/lib/types/pilot";
@@ -92,6 +93,7 @@ export default async function PilotProfilePage({
               </div>
             )}
           </div>
+          {license && <VerifyQr token={license.public_verify_token} />}
         </CardContent>
       </Card>
 
