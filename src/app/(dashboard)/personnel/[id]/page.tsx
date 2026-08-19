@@ -48,8 +48,16 @@ export default async function PilotProfilePage({
 
   if (!profile) notFound();
 
-  const { pilot, rankLabel, license, qualifications, flights, ape, currencyItems, stanevalRecords } =
-    profile;
+  const {
+    pilot,
+    rankLabel,
+    license,
+    qualifications,
+    flights,
+    apeRecords,
+    currencyItems,
+    stanevalRecords,
+  } = profile;
 
   return (
     <div className="space-y-6">
@@ -184,43 +192,51 @@ export default async function PilotProfilePage({
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {/* APE status */}
+        {/* APE status — history, most recent first, like StanEval */}
         <Card>
-          <CardHeader>
-            <CardTitle>APE Status</CardTitle>
-            <CardDescription>Aviation Physical Examination</CardDescription>
+          <CardHeader className="flex items-center justify-between">
+            <div>
+              <CardTitle>APE Status</CardTitle>
+              <CardDescription>Aviation Physical Examination history.</CardDescription>
+            </div>
+            <Button asChild size="sm">
+              <Link href={`/personnel/${id}/ape/new`}>Add APE Record</Link>
+            </Button>
           </CardHeader>
           <CardContent>
-            {ape ? (
-              <div className="space-y-3 text-sm">
-                <Badge
-                  className={
-                    ape.fit_to_fly
-                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300"
-                      : "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300"
-                  }
-                >
-                  {ape.fit_to_fly ? "Fit to Fly" : "Not Fit to Fly"}
-                </Badge>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Last APE</p>
-                    <p className="font-medium">{formatDate(ape.last_ape_date)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Next Due</p>
-                    <p className="font-medium">{formatDate(ape.next_due_date)}</p>
-                  </div>
-                </div>
-                {ape.classification && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Classification</p>
-                    <p className="font-medium">{ape.classification}</p>
-                  </div>
-                )}
-              </div>
+            {apeRecords.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No APE records on file.</p>
             ) : (
-              <p className="text-sm text-muted-foreground">No APE record on file.</p>
+              <div className="space-y-2">
+                {apeRecords.map((record) => (
+                  <div
+                    key={record.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{formatDate(record.last_ape_date)}</p>
+                        <Badge
+                          className={
+                            record.fit_to_fly
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300"
+                              : "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300"
+                          }
+                        >
+                          {record.fit_to_fly ? "Fit to Fly" : "Not Fit to Fly"}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {record.classification ?? "No classification"} · Next due{" "}
+                        {formatDate(record.next_due_date)}
+                      </p>
+                    </div>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/personnel/${id}/ape/${record.id}/edit`}>Edit</Link>
+                    </Button>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>

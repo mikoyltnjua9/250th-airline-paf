@@ -34,7 +34,7 @@ export type PilotProfile = {
   license: License | null;
   qualifications: (Qualification & { aircraft_types: { label: string } | null })[];
   flights: (Flight & { aircraft_types: { label: string } | null })[];
-  ape: ApeRecord | null;
+  apeRecords: ApeRecord[];
   currencyItems: CurrencyItem[];
   stanevalRecords: StanevalRecord[];
 };
@@ -67,8 +67,7 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
         .from("ape_records")
         .select("*")
         .eq("pilot_id", id)
-        .order("last_ape_date", { ascending: false })
-        .limit(1),
+        .order("last_ape_date", { ascending: false }),
       supabase.from("currency_items").select("*").eq("pilot_id", id),
       supabase
         .from("staneval_records")
@@ -90,7 +89,7 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
     license: (licenseRes.data?.[0] as License | undefined) ?? null,
     qualifications: (qualsRes.data ?? []) as unknown as PilotProfile["qualifications"],
     flights: (flightsRes.data ?? []) as unknown as PilotProfile["flights"],
-    ape: (apeRes.data?.[0] as ApeRecord | undefined) ?? null,
+    apeRecords: (apeRes.data ?? []) as ApeRecord[],
     currencyItems: (currencyRes.data ?? []) as CurrencyItem[],
     stanevalRecords: (stanevalRes.data ?? []) as StanevalRecord[],
   };
@@ -121,6 +120,21 @@ export async function getQualification(
     .select("*")
     .eq("pilot_id", pilotId)
     .eq("id", qualificationId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function getApeRecord(
+  pilotId: string,
+  recordId: string,
+): Promise<ApeRecord | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("ape_records")
+    .select("*")
+    .eq("pilot_id", pilotId)
+    .eq("id", recordId)
     .maybeSingle();
   if (error) throw error;
   return data;
