@@ -45,7 +45,12 @@ export function Header({ fullName, roleLabel }: { fullName: string; roleLabel: s
           <span className="hidden text-sm font-medium sm:inline">{fullName}</span>
         </div>
         <form action={signOut}>
-          <Button type="submit" variant="outline" size="sm">
+          <Button
+            type="submit"
+            variant="outline"
+            size="sm"
+            className="border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          >
             Sign out
           </Button>
         </form>
