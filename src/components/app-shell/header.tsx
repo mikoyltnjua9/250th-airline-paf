@@ -17,7 +17,7 @@ function initials(name: string) {
 
 export function Header({ fullName, roleLabel }: { fullName: string; roleLabel: string }) {
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar px-3 text-sidebar-foreground sm:h-20 sm:px-6">
+    <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar px-3 text-sidebar-foreground sm:h-20 sm:px-6 print:hidden">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <MobileNav />
         <Crest className="h-9 w-9 shrink-0 sm:h-11 sm:w-11" />

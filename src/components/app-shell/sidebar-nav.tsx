@@ -40,7 +40,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Currency Status", href: "/currency", icon: RefreshCcw, disabled: true },
   { label: "Training Records", href: "/training", icon: BookOpen, disabled: true },
   { label: "StanEval & Grading", href: "/staneval", icon: ClipboardList, disabled: true },
-  { label: "Reports & Analytics", href: "/reports", icon: BarChart3, disabled: true },
+  { label: "Reports & Analytics", href: "/reports", icon: BarChart3 },
   { label: "Alerts & Notifications", href: "/alerts", icon: Bell, disabled: true },
   { label: "System Management", href: "/system", icon: Settings },
 ];
