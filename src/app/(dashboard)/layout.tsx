@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { roleLabel } from "@/lib/permissions";
+import { Header } from "@/components/app-shell/header";
 import { Sidebar } from "@/components/app-shell/sidebar";
-import { Topbar } from "@/components/app-shell/topbar";
+import { Footer } from "@/components/app-shell/footer";
 
 export default async function DashboardLayout({
   children,
@@ -16,11 +17,14 @@ export default async function DashboardLayout({
   if (!profile) redirect("/login");
 
   return (
-    <div className="flex min-h-svh bg-background">
-      <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar fullName={profile.full_name} roleLabel={roleLabel(profile.role_code)} />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+    <div className="flex min-h-svh flex-col bg-background">
+      <Header fullName={profile.full_name} roleLabel={roleLabel(profile.role_code)} />
+      <div className="flex min-h-0 flex-1">
+        <Sidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          <Footer />
+        </div>
       </div>
     </div>
   );

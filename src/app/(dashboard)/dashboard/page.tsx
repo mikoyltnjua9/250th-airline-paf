@@ -1,14 +1,15 @@
 import { getCurrentProfile } from "@/lib/auth/get-profile";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { StatTile } from "@/components/dashboard/stat-tile";
+import { AlertsCard } from "@/components/dashboard/alerts-card";
+import { QualificationsCard } from "@/components/dashboard/qualifications-card";
+import { CurrencyCard } from "@/components/dashboard/currency-card";
+import { WorkloadCard } from "@/components/dashboard/workload-card";
+import { getOverviewStats } from "@/lib/mock/dashboard";
 
 export default async function DashboardPage() {
   const profile = await getCurrentProfile();
+  const stats = getOverviewStats();
 
   return (
     <div className="space-y-6">
@@ -16,21 +17,46 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-semibold tracking-tight">
           Welcome, {profile?.full_name}
         </h1>
-        <p className="text-muted-foreground">You&apos;re signed in with 2FA verified.</p>
+        <p className="text-muted-foreground">Wing Safety Dashboard — Overview</p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Dashboard Overview</CardTitle>
-          <CardDescription>
-            Phase 1 placeholder. The real Overview — equipment quals, duty/workload,
-            currency status, and alerts — is built in Phase 2.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Auth, mandatory 2FA, session timeout, and the app shell are wired up and
-          working end to end.
-        </CardContent>
-      </Card>
+
+      <Alert>
+        <AlertTitle>Sample data</AlertTitle>
+        <AlertDescription>
+          This Overview is showing mock data. It switches to live records once Pilot
+          Profiles (Phase 3) are built.
+        </AlertDescription>
+      </Alert>
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatTile label="Total Pilots" value={stats.totalPilots} />
+        <StatTile
+          label="Fully Mission-Ready"
+          value={stats.fullyMissionReady}
+          hint={`of ${stats.totalPilots} pilots`}
+          tone="good"
+        />
+        <StatTile
+          label="Active Alerts"
+          value={stats.totalAlerts}
+          hint={`${stats.expiredAlerts} expired · ${stats.expiringAlerts} expiring soon`}
+          tone={stats.expiredAlerts > 0 ? "danger" : stats.expiringAlerts > 0 ? "warning" : "good"}
+        />
+        <StatTile
+          label="Flight Hours"
+          value={stats.totalHours30Days.toFixed(1)}
+          hint="wing total, last 30 days"
+        />
+      </div>
+
+      <AlertsCard />
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <QualificationsCard />
+        <CurrencyCard />
+      </div>
+
+      <WorkloadCard />
     </div>
   );
 }
