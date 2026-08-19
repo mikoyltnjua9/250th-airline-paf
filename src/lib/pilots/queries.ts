@@ -34,6 +34,7 @@ export type PilotProfile = {
   license: License | null;
   qualifications: (Qualification & { aircraft_types: { label: string } | null })[];
   flights: (Flight & { aircraft_types: { label: string } | null })[];
+  flightTotals: { flyingHours: number; blockHours: number; flightCount: number };
   apeRecords: ApeRecord[];
   currencyItems: CurrencyItem[];
   stanevalRecords: StanevalRecord[];
@@ -42,39 +43,51 @@ export type PilotProfile = {
 export async function getPilotProfile(id: string): Promise<PilotProfile | null> {
   const supabase = await createClient();
 
-  const [pilotRes, rankRes, licenseRes, qualsRes, flightsRes, apeRes, currencyRes, stanevalRes] =
-    await Promise.all([
-      supabase.from("pilots").select("*").eq("id", id).maybeSingle(),
-      supabase.from("pilots").select("rank_code, ranks(label)").eq("id", id).maybeSingle(),
-      supabase
-        .from("licenses")
-        .select("*")
-        .eq("pilot_id", id)
-        .order("date_issued", { ascending: false })
-        .limit(1),
-      supabase
-        .from("qualifications")
-        .select("*, aircraft_types(label)")
-        .eq("pilot_id", id)
-        .order("aircraft_type_code"),
-      supabase
-        .from("flights")
-        .select("*, aircraft_types(label)")
-        .eq("pilot_id", id)
-        .order("flight_date", { ascending: false })
-        .limit(10),
-      supabase
-        .from("ape_records")
-        .select("*")
-        .eq("pilot_id", id)
-        .order("last_ape_date", { ascending: false }),
-      supabase.from("currency_items").select("*").eq("pilot_id", id),
-      supabase
-        .from("staneval_records")
-        .select("*")
-        .eq("pilot_id", id)
-        .order("eval_date", { ascending: false }),
-    ]);
+  const [
+    pilotRes,
+    rankRes,
+    licenseRes,
+    qualsRes,
+    flightsRes,
+    allFlightHoursRes,
+    apeRes,
+    currencyRes,
+    stanevalRes,
+  ] = await Promise.all([
+    supabase.from("pilots").select("*").eq("id", id).maybeSingle(),
+    supabase.from("pilots").select("rank_code, ranks(label)").eq("id", id).maybeSingle(),
+    supabase
+      .from("licenses")
+      .select("*")
+      .eq("pilot_id", id)
+      .order("date_issued", { ascending: false })
+      .limit(1),
+    supabase
+      .from("qualifications")
+      .select("*, aircraft_types(label)")
+      .eq("pilot_id", id)
+      .order("aircraft_type_code"),
+    supabase
+      .from("flights")
+      .select("*, aircraft_types(label)")
+      .eq("pilot_id", id)
+      .order("flight_date", { ascending: false })
+      .limit(10),
+    // Separate, uncapped fetch just for totals — the list above is
+    // deliberately limited to the 10 most recent entries.
+    supabase.from("flights").select("flying_time_hours, block_time_hours").eq("pilot_id", id),
+    supabase
+      .from("ape_records")
+      .select("*")
+      .eq("pilot_id", id)
+      .order("last_ape_date", { ascending: false }),
+    supabase.from("currency_items").select("*").eq("pilot_id", id),
+    supabase
+      .from("staneval_records")
+      .select("*")
+      .eq("pilot_id", id)
+      .order("eval_date", { ascending: false }),
+  ]);
 
   if (pilotRes.error) throw pilotRes.error;
   if (!pilotRes.data) return null;
@@ -83,12 +96,20 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
     (rankRes.data as unknown as { ranks: { label: string } | null } | null)?.ranks?.label ??
     pilotRes.data.rank_code;
 
+  const allFlightHours = allFlightHoursRes.data ?? [];
+  const flightTotals = {
+    flyingHours: allFlightHours.reduce((sum, f) => sum + (f.flying_time_hours ?? 0), 0),
+    blockHours: allFlightHours.reduce((sum, f) => sum + (f.block_time_hours ?? 0), 0),
+    flightCount: allFlightHours.length,
+  };
+
   return {
     pilot: pilotRes.data as Pilot,
     rankLabel,
     license: (licenseRes.data?.[0] as License | undefined) ?? null,
     qualifications: (qualsRes.data ?? []) as unknown as PilotProfile["qualifications"],
     flights: (flightsRes.data ?? []) as unknown as PilotProfile["flights"],
+    flightTotals,
     apeRecords: (apeRes.data ?? []) as ApeRecord[],
     currencyItems: (currencyRes.data ?? []) as CurrencyItem[],
     stanevalRecords: (stanevalRes.data ?? []) as StanevalRecord[],
@@ -120,6 +141,18 @@ export async function getQualification(
     .select("*")
     .eq("pilot_id", pilotId)
     .eq("id", qualificationId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function getFlight(pilotId: string, flightId: string): Promise<Flight | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("flights")
+    .select("*")
+    .eq("pilot_id", pilotId)
+    .eq("id", flightId)
     .maybeSingle();
   if (error) throw error;
   return data;

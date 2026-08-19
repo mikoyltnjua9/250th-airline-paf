@@ -54,6 +54,7 @@ export default async function PilotProfilePage({
     license,
     qualifications,
     flights,
+    flightTotals,
     apeRecords,
     currencyItems,
     stanevalRecords,
@@ -241,11 +242,20 @@ export default async function PilotProfilePage({
           </CardContent>
         </Card>
 
-        {/* Recent flights */}
+        {/* Flying hours & history */}
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Flights</CardTitle>
-            <CardDescription>Most recent flying-hours entries.</CardDescription>
+          <CardHeader className="flex items-center justify-between">
+            <div>
+              <CardTitle>Flying Hours &amp; History</CardTitle>
+              <CardDescription>
+                {flightTotals.flightCount} flight{flightTotals.flightCount === 1 ? "" : "s"} on
+                record · {flightTotals.flyingHours.toFixed(1)}h flying ·{" "}
+                {flightTotals.blockHours.toFixed(1)}h block, all-time. Showing 10 most recent.
+              </CardDescription>
+            </div>
+            <Button asChild size="sm">
+              <Link href={`/personnel/${id}/flights/new`}>Add Flight</Link>
+            </Button>
           </CardHeader>
           <CardContent>
             {flights.length === 0 ? (
@@ -254,7 +264,11 @@ export default async function PilotProfilePage({
               <>
                 <div className="space-y-2 sm:hidden">
                   {flights.map((f) => (
-                    <div key={f.id} className="rounded-lg border p-3 text-sm">
+                    <Link
+                      key={f.id}
+                      href={`/personnel/${id}/flights/${f.id}/edit`}
+                      className="block rounded-lg border p-3 text-sm transition-colors hover:bg-muted/50"
+                    >
                       <div className="flex items-center justify-between">
                         <p className="font-medium">{f.aircraft_types?.label ?? f.aircraft_type_code}</p>
                         <span className="text-muted-foreground">{formatDate(f.flight_date)}</span>
@@ -262,7 +276,7 @@ export default async function PilotProfilePage({
                       <p className="mt-1 text-muted-foreground">
                         {f.route ?? "—"} · {f.duty} · {f.flying_time_hours.toFixed(1)}h
                       </p>
-                    </div>
+                    </Link>
                   ))}
                 </div>
                 <div className="hidden overflow-x-auto sm:block">
@@ -274,6 +288,9 @@ export default async function PilotProfilePage({
                         <TableHead>Route</TableHead>
                         <TableHead>Duty</TableHead>
                         <TableHead className="text-right">Hours</TableHead>
+                        <TableHead className="text-right">
+                          <span className="sr-only">Edit</span>
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -289,6 +306,11 @@ export default async function PilotProfilePage({
                           <TableCell>{f.duty}</TableCell>
                           <TableCell className="text-right tabular-nums">
                             {f.flying_time_hours.toFixed(1)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button asChild variant="outline" size="sm">
+                              <Link href={`/personnel/${id}/flights/${f.id}/edit`}>Edit</Link>
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
