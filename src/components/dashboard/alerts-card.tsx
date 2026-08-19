@@ -16,12 +16,11 @@ import {
 import { StatusBadge } from "@/components/status-badge";
 import {
   EXPIRING_SOON_THRESHOLD_DAYS,
-  MOCK_ALERTS,
-  findPilot,
-  type AlertCategory,
-} from "@/lib/mock/dashboard";
+  type DashboardAlert,
+  type DashboardAlertCategory,
+} from "@/lib/dashboard/queries";
 
-const CATEGORY_LABELS: Record<AlertCategory, string> = {
+const CATEGORY_LABELS: Record<DashboardAlertCategory, string> = {
   license: "License",
   qualification: "Qualification",
   currency: "Currency",
@@ -37,9 +36,7 @@ function formatDate(iso: string) {
   });
 }
 
-export function AlertsCard() {
-  const sorted = [...MOCK_ALERTS].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-
+export function AlertsCard({ alerts }: { alerts: DashboardAlert[] }) {
   return (
     <Card>
       <CardHeader>
@@ -49,7 +46,7 @@ export function AlertsCard() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {sorted.length === 0 ? (
+        {alerts.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nothing needs attention right now.</p>
         ) : (
           <>
@@ -57,28 +54,23 @@ export function AlertsCard() {
                 room to breathe on a phone, and relying on an invisible
                 horizontal scrollbar to reveal the rest is easy to miss. */}
             <div className="space-y-3 sm:hidden">
-              {sorted.map((alert) => {
-                const pilot = findPilot(alert.pilotId);
-                return (
-                  <div key={alert.id} className="rounded-lg border p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">
-                          {pilot ? `${pilot.rank} ${pilot.fullName}` : "Unknown pilot"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {CATEGORY_LABELS[alert.category]}
-                        </p>
-                      </div>
-                      <StatusBadge status={alert.status} />
+              {alerts.map((alert) => (
+                <div key={alert.id} className="rounded-lg border p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{alert.pilotName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {CATEGORY_LABELS[alert.category]}
+                      </p>
                     </div>
-                    <p className="mt-2 text-sm">{alert.detail}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Due {formatDate(alert.dueDate)}
-                    </p>
+                    <StatusBadge status={alert.status} />
                   </div>
-                );
-              })}
+                  <p className="mt-2 text-sm">{alert.detail}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Due {formatDate(alert.dueDate)}
+                  </p>
+                </div>
+              ))}
             </div>
 
             <div className="hidden overflow-x-auto sm:block">
@@ -93,26 +85,23 @@ export function AlertsCard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sorted.map((alert) => {
-                    const pilot = findPilot(alert.pilotId);
-                    return (
-                      <TableRow key={alert.id}>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          {pilot ? `${pilot.rank} ${pilot.fullName}` : "Unknown pilot"}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-muted-foreground">
-                          {CATEGORY_LABELS[alert.category]}
-                        </TableCell>
-                        <TableCell>{alert.detail}</TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {formatDate(alert.dueDate)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <StatusBadge status={alert.status} />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {alerts.map((alert) => (
+                    <TableRow key={alert.id}>
+                      <TableCell className="font-medium whitespace-nowrap">
+                        {alert.pilotName}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">
+                        {CATEGORY_LABELS[alert.category]}
+                      </TableCell>
+                      <TableCell>{alert.detail}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(alert.dueDate)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <StatusBadge status={alert.status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

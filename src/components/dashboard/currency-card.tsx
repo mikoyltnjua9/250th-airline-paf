@@ -13,9 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CURRENCY_ITEM_LABELS, MOCK_CURRENCY_SUMMARY } from "@/lib/mock/dashboard";
+import { CURRENCY_ITEM_LABELS } from "@/lib/types/pilot";
+import type { CurrencySummaryRow } from "@/lib/dashboard/queries";
 
-export function CurrencyCard() {
+export function CurrencyCard({ rows }: { rows: CurrencySummaryRow[] }) {
   return (
     <Card>
       <CardHeader>
@@ -24,7 +25,7 @@ export function CurrencyCard() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3 sm:hidden">
-          {MOCK_CURRENCY_SUMMARY.map((row) => (
+          {rows.map((row) => (
             <div key={row.itemType} className="rounded-lg border p-3">
               <p className="font-medium">{CURRENCY_ITEM_LABELS[row.itemType]}</p>
               <div className="mt-2 grid grid-cols-3 gap-x-4 gap-y-1 text-sm">
@@ -62,7 +63,7 @@ export function CurrencyCard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_CURRENCY_SUMMARY.map((row) => (
+              {rows.map((row) => (
                 <TableRow key={row.itemType}>
                   <TableCell className="font-medium whitespace-nowrap">
                     {CURRENCY_ITEM_LABELS[row.itemType]}

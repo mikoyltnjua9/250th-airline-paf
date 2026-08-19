@@ -13,9 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MOCK_QUALIFICATION_SUMMARY } from "@/lib/mock/dashboard";
+import type { QualSummaryRow } from "@/lib/dashboard/queries";
 
-export function QualificationsCard() {
+export function QualificationsCard({ rows }: { rows: QualSummaryRow[] }) {
   return (
     <Card>
       <CardHeader>
@@ -23,74 +23,80 @@ export function QualificationsCard() {
         <CardDescription>Pilots qualified per aircraft type, by status.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3 sm:hidden">
-          {MOCK_QUALIFICATION_SUMMARY.map((row) => (
-            <div key={row.aircraftType} className="rounded-lg border p-3">
-              <p className="font-medium">{row.aircraftType}</p>
-              <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                <p>
-                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                    {row.current}
-                  </span>{" "}
-                  <span className="text-muted-foreground">current</span>
-                </p>
-                <p>
-                  <span className="font-medium text-amber-600 dark:text-amber-400">
-                    {row.expiringSoon}
-                  </span>{" "}
-                  <span className="text-muted-foreground">expiring</span>
-                </p>
-                <p>
-                  <span className="font-medium text-red-600 dark:text-red-400">
-                    {row.expired}
-                  </span>{" "}
-                  <span className="text-muted-foreground">expired</span>
-                </p>
-                <p>
-                  <span className="font-medium text-sky-600 dark:text-sky-400">
-                    {row.inTraining}
-                  </span>{" "}
-                  <span className="text-muted-foreground">in training</span>
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="hidden overflow-x-auto sm:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Aircraft</TableHead>
-                <TableHead className="text-right">Current</TableHead>
-                <TableHead className="text-right">Expiring</TableHead>
-                <TableHead className="text-right">Expired</TableHead>
-                <TableHead className="text-right">In Training</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {MOCK_QUALIFICATION_SUMMARY.map((row) => (
-                <TableRow key={row.aircraftType}>
-                  <TableCell className="font-medium whitespace-nowrap">
-                    {row.aircraftType}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-emerald-600 dark:text-emerald-400">
-                    {row.current || "–"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-amber-600 dark:text-amber-400">
-                    {row.expiringSoon || "–"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-red-600 dark:text-red-400">
-                    {row.expired || "–"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-sky-600 dark:text-sky-400">
-                    {row.inTraining || "–"}
-                  </TableCell>
-                </TableRow>
+        {rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No aircraft types on record.</p>
+        ) : (
+          <>
+            <div className="space-y-3 sm:hidden">
+              {rows.map((row) => (
+                <div key={row.aircraftTypeCode} className="rounded-lg border p-3">
+                  <p className="font-medium">{row.aircraftTypeLabel}</p>
+                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <p>
+                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                        {row.current}
+                      </span>{" "}
+                      <span className="text-muted-foreground">current</span>
+                    </p>
+                    <p>
+                      <span className="font-medium text-amber-600 dark:text-amber-400">
+                        {row.expiringSoon}
+                      </span>{" "}
+                      <span className="text-muted-foreground">expiring</span>
+                    </p>
+                    <p>
+                      <span className="font-medium text-red-600 dark:text-red-400">
+                        {row.expired}
+                      </span>{" "}
+                      <span className="text-muted-foreground">expired</span>
+                    </p>
+                    <p>
+                      <span className="font-medium text-sky-600 dark:text-sky-400">
+                        {row.inTraining}
+                      </span>{" "}
+                      <span className="text-muted-foreground">in training</span>
+                    </p>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
-        </div>
+            </div>
+
+            <div className="hidden overflow-x-auto sm:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Aircraft</TableHead>
+                    <TableHead className="text-right">Current</TableHead>
+                    <TableHead className="text-right">Expiring</TableHead>
+                    <TableHead className="text-right">Expired</TableHead>
+                    <TableHead className="text-right">In Training</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row) => (
+                    <TableRow key={row.aircraftTypeCode}>
+                      <TableCell className="font-medium whitespace-nowrap">
+                        {row.aircraftTypeLabel}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-emerald-600 dark:text-emerald-400">
+                        {row.current || "–"}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-amber-600 dark:text-amber-400">
+                        {row.expiringSoon || "–"}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-red-600 dark:text-red-400">
+                        {row.expired || "–"}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-sky-600 dark:text-sky-400">
+                        {row.inTraining || "–"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
