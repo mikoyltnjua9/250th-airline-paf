@@ -31,7 +31,7 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Personnel Directory", href: "/personnel", icon: Users, disabled: true },
+  { label: "Personnel Directory", href: "/personnel", icon: Users },
   { label: "License Verification", href: "/licenses", icon: ScanLine, disabled: true },
   { label: "Qualifications", href: "/qualifications", icon: GraduationCap, disabled: true },
   { label: "Flying Hours & History", href: "/flying-hours", icon: PlaneTakeoff, disabled: true },
@@ -57,7 +57,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     <nav className="flex-1 space-y-1 px-3 py-4">
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href;
+        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
         if (item.disabled) {
           return (

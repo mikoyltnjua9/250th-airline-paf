@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StatusBadge } from "@/components/dashboard/status-badge";
+import { StatusBadge } from "@/components/status-badge";
 import {
   EXPIRING_SOON_THRESHOLD_DAYS,
   MOCK_ALERTS,
