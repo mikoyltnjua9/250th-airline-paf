@@ -1,5 +1,10 @@
 import { cn } from "@/lib/utils";
-import type { QualificationStatus, LicenseStatus, StanevalStatus } from "@/lib/types/pilot";
+import type {
+  QualificationStatus,
+  LicenseStatus,
+  StanevalStatus,
+  TrainingStatus,
+} from "@/lib/types/pilot";
 
 const QUAL_STATUS_STYLES: Record<QualificationStatus, string> = {
   current: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
@@ -74,6 +79,31 @@ export function StanevalStatusBadge({ status }: { status: StanevalStatus }) {
       )}
     >
       {STANEVAL_STATUS_LABELS[status]}
+    </span>
+  );
+}
+
+const TRAINING_STATUS_STYLES: Record<TrainingStatus, string> = {
+  completed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
+  scheduled: "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300",
+  overdue: "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300",
+};
+
+const TRAINING_STATUS_LABELS: Record<TrainingStatus, string> = {
+  completed: "Completed",
+  scheduled: "Scheduled",
+  overdue: "Overdue",
+};
+
+export function TrainingStatusBadge({ status }: { status: TrainingStatus }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+        TRAINING_STATUS_STYLES[status],
+      )}
+    >
+      {TRAINING_STATUS_LABELS[status]}
     </span>
   );
 }

@@ -19,7 +19,12 @@ import {
 } from "@/components/ui/table";
 import { PilotAvatar } from "@/components/pilots/pilot-avatar";
 import { VerifyQr } from "@/components/pilots/verify-qr";
-import { StatusBadge, LicenseStatusBadge, StanevalStatusBadge } from "@/components/status-badge";
+import {
+  StatusBadge,
+  LicenseStatusBadge,
+  StanevalStatusBadge,
+  TrainingStatusBadge,
+} from "@/components/status-badge";
 import { getPilotProfile } from "@/lib/pilots/queries";
 import {
   currencyStatus,
@@ -58,6 +63,7 @@ export default async function PilotProfilePage({
     apeRecords,
     currencyItems,
     stanevalRecords,
+    trainingRecords,
   } = profile;
 
   return (
@@ -358,6 +364,46 @@ export default async function PilotProfilePage({
                   </div>
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/personnel/${id}/staneval/${record.id}/edit`}>Edit</Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Training Records */}
+      <Card>
+        <CardHeader className="flex items-center justify-between">
+          <div>
+            <CardTitle>Training Records</CardTitle>
+            <CardDescription>Recurrent and specialized training history.</CardDescription>
+          </div>
+          <Button asChild size="sm">
+            <Link href={`/personnel/${id}/training/new`}>Add Training Record</Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {trainingRecords.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No training records on file.</p>
+          ) : (
+            <div className="space-y-2">
+              {trainingRecords.map((record) => (
+                <div
+                  key={record.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate font-medium">{record.training_type}</p>
+                      <TrainingStatusBadge status={record.status} />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(record.training_date)}
+                    </p>
+                  </div>
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/personnel/${id}/training/${record.id}/edit`}>Edit</Link>
                   </Button>
                 </div>
               ))}

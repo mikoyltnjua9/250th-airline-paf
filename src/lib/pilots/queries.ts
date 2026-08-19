@@ -8,6 +8,7 @@ import type {
   ApeRecord,
   CurrencyItem,
   StanevalRecord,
+  TrainingRecord,
   Rank,
   AircraftType,
 } from "@/lib/types/pilot";
@@ -92,6 +93,7 @@ export type PilotProfile = {
   apeRecords: ApeRecord[];
   currencyItems: CurrencyItem[];
   stanevalRecords: StanevalRecord[];
+  trainingRecords: TrainingRecord[];
 };
 
 export async function getPilotProfile(id: string): Promise<PilotProfile | null> {
@@ -107,6 +109,7 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
     apeRes,
     currencyRes,
     stanevalRes,
+    trainingRes,
   ] = await Promise.all([
     supabase.from("pilots").select("*").eq("id", id).maybeSingle(),
     supabase.from("pilots").select("rank_code, ranks(label)").eq("id", id).maybeSingle(),
@@ -141,6 +144,11 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
       .select("*")
       .eq("pilot_id", id)
       .order("eval_date", { ascending: false }),
+    supabase
+      .from("training_records")
+      .select("*")
+      .eq("pilot_id", id)
+      .order("training_date", { ascending: false }),
   ]);
 
   if (pilotRes.error) throw pilotRes.error;
@@ -167,6 +175,7 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
     apeRecords: (apeRes.data ?? []) as ApeRecord[],
     currencyItems: (currencyRes.data ?? []) as CurrencyItem[],
     stanevalRecords: (stanevalRes.data ?? []) as StanevalRecord[],
+    trainingRecords: (trainingRes.data ?? []) as TrainingRecord[],
   };
 }
 
@@ -219,6 +228,21 @@ export async function getApeRecord(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("ape_records")
+    .select("*")
+    .eq("pilot_id", pilotId)
+    .eq("id", recordId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function getTrainingRecord(
+  pilotId: string,
+  recordId: string,
+): Promise<TrainingRecord | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("training_records")
     .select("*")
     .eq("pilot_id", pilotId)
     .eq("id", recordId)

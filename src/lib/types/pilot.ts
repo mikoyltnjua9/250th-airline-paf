@@ -1,5 +1,5 @@
-// Hand-written to match supabase/migrations/20260819084215_pilot_records.sql
-// and 20260819094838_staneval_records.sql.
+// Hand-written to match supabase/migrations/20260819084215_pilot_records.sql,
+// 20260819094838_staneval_records.sql, and 20260819145142_training_records.sql.
 // TODO: once the Supabase CLI is properly linked (needs a personal access
 // token, not just the project keys), replace this with generated types via
 // `supabase gen types typescript`.
@@ -8,6 +8,7 @@ export type LicenseStatus = "valid" | "expired" | "revoked" | "suspended";
 export type QualificationStatus = "current" | "expiring_soon" | "expired" | "in_training";
 export type FlightDuty = "PIC" | "SIC" | "IP" | "Student";
 export type CurrencyItemType = "last_flight" | "ifr" | "night_proficiency" | "peculiar_runways";
+export type TrainingStatus = "completed" | "scheduled" | "overdue";
 export type StanevalStatus = "pass" | "fail";
 
 export type Rank = {
@@ -95,6 +96,14 @@ export type StanevalRecord = {
   status: StanevalStatus;
   grading: string | null;
   next_due_date: string | null;
+};
+
+export type TrainingRecord = {
+  id: string;
+  pilot_id: string;
+  training_type: string;
+  status: TrainingStatus;
+  training_date: string;
 };
 
 /** Derives current/expiring_soon/expired from last_date + validity_days. */
