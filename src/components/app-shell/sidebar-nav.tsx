@@ -42,7 +42,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "StanEval & Grading", href: "/staneval", icon: ClipboardList, disabled: true },
   { label: "Reports & Analytics", href: "/reports", icon: BarChart3, disabled: true },
   { label: "Alerts & Notifications", href: "/alerts", icon: Bell, disabled: true },
-  { label: "System Management", href: "/system", icon: Settings, disabled: true },
+  { label: "System Management", href: "/system", icon: Settings },
 ];
 
 /**
