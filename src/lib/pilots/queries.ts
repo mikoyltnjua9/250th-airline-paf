@@ -7,6 +7,7 @@ import type {
   Flight,
   ApeRecord,
   CurrencyItem,
+  StanevalRecord,
   Rank,
   AircraftType,
 } from "@/lib/types/pilot";
@@ -35,12 +36,13 @@ export type PilotProfile = {
   flights: (Flight & { aircraft_types: { label: string } | null })[];
   ape: ApeRecord | null;
   currencyItems: CurrencyItem[];
+  stanevalRecords: StanevalRecord[];
 };
 
 export async function getPilotProfile(id: string): Promise<PilotProfile | null> {
   const supabase = await createClient();
 
-  const [pilotRes, rankRes, licenseRes, qualsRes, flightsRes, apeRes, currencyRes] =
+  const [pilotRes, rankRes, licenseRes, qualsRes, flightsRes, apeRes, currencyRes, stanevalRes] =
     await Promise.all([
       supabase.from("pilots").select("*").eq("id", id).maybeSingle(),
       supabase.from("pilots").select("rank_code, ranks(label)").eq("id", id).maybeSingle(),
@@ -68,6 +70,11 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
         .order("last_ape_date", { ascending: false })
         .limit(1),
       supabase.from("currency_items").select("*").eq("pilot_id", id),
+      supabase
+        .from("staneval_records")
+        .select("*")
+        .eq("pilot_id", id)
+        .order("eval_date", { ascending: false }),
     ]);
 
   if (pilotRes.error) throw pilotRes.error;
@@ -85,7 +92,23 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
     flights: (flightsRes.data ?? []) as unknown as PilotProfile["flights"],
     ape: (apeRes.data?.[0] as ApeRecord | undefined) ?? null,
     currencyItems: (currencyRes.data ?? []) as CurrencyItem[],
+    stanevalRecords: (stanevalRes.data ?? []) as StanevalRecord[],
   };
+}
+
+export async function getStanevalRecord(
+  pilotId: string,
+  recordId: string,
+): Promise<StanevalRecord | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("staneval_records")
+    .select("*")
+    .eq("pilot_id", pilotId)
+    .eq("id", recordId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 export async function getRanks(): Promise<Rank[]> {

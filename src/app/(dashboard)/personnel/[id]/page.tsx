@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PilotAvatar } from "@/components/pilots/pilot-avatar";
-import { StatusBadge, LicenseStatusBadge } from "@/components/status-badge";
+import { StatusBadge, LicenseStatusBadge, StanevalStatusBadge } from "@/components/status-badge";
 import { getPilotProfile } from "@/lib/pilots/queries";
 import { currencyStatus, CURRENCY_ITEM_LABELS } from "@/lib/types/pilot";
 
@@ -41,7 +41,8 @@ export default async function PilotProfilePage({
 
   if (!profile) notFound();
 
-  const { pilot, rankLabel, license, qualifications, flights, ape, currencyItems } = profile;
+  const { pilot, rankLabel, license, qualifications, flights, ape, currencyItems, stanevalRecords } =
+    profile;
 
   return (
     <div className="space-y-6">
@@ -258,6 +259,49 @@ export default async function PilotProfilePage({
           </CardContent>
         </Card>
       </div>
+
+      {/* StanEval & Check */}
+      <Card>
+        <CardHeader className="flex items-center justify-between">
+          <div>
+            <CardTitle>StanEval &amp; Check</CardTitle>
+            <CardDescription>Standardization/evaluation check ride history.</CardDescription>
+          </div>
+          <Button asChild size="sm">
+            <Link href={`/personnel/${id}/staneval/new`}>Add StanEval</Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {stanevalRecords.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No StanEval records on file.</p>
+          ) : (
+            <div className="space-y-2">
+              {stanevalRecords.map((record) => (
+                <div
+                  key={record.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{formatDate(record.eval_date)}</p>
+                      <StanevalStatusBadge status={record.status} />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {record.grading ?? "No grading notes"}
+                      {record.next_due_date
+                        ? ` · Next due ${formatDate(record.next_due_date)}`
+                        : ""}
+                    </p>
+                  </div>
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/personnel/${id}/staneval/${record.id}/edit`}>Edit</Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
