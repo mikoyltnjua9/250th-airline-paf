@@ -21,7 +21,13 @@ import { PilotAvatar } from "@/components/pilots/pilot-avatar";
 import { VerifyQr } from "@/components/pilots/verify-qr";
 import { StatusBadge, LicenseStatusBadge, StanevalStatusBadge } from "@/components/status-badge";
 import { getPilotProfile } from "@/lib/pilots/queries";
-import { currencyStatus, CURRENCY_ITEM_LABELS } from "@/lib/types/pilot";
+import {
+  currencyStatus,
+  CURRENCY_ITEM_LABELS,
+  type CurrencyItemType,
+} from "@/lib/types/pilot";
+
+const CURRENCY_ITEM_TYPES = Object.keys(CURRENCY_ITEM_LABELS) as CurrencyItemType[];
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -100,8 +106,11 @@ export default async function PilotProfilePage({
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {/* Equipment qualifications */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle>Equipment Qualifications</CardTitle>
+            <Button asChild size="sm">
+              <Link href={`/personnel/${id}/qualifications/new`}>Add Qualification</Link>
+            </Button>
           </CardHeader>
           <CardContent>
             {qualifications.length === 0 ? (
@@ -122,7 +131,12 @@ export default async function PilotProfilePage({
                         {q.expiry_date ? ` · Expires ${formatDate(q.expiry_date)}` : ""}
                       </p>
                     </div>
-                    <StatusBadge status={q.status} />
+                    <div className="flex shrink-0 items-center gap-2">
+                      <StatusBadge status={q.status} />
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/personnel/${id}/qualifications/${q.id}/edit`}>Edit</Link>
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -130,32 +144,41 @@ export default async function PilotProfilePage({
           </CardContent>
         </Card>
 
-        {/* Currency status */}
+        {/* Currency status — 4 fixed requirements, at most one row each per
+            pilot. Show every slot, even ones with nothing on file yet. */}
         <Card>
           <CardHeader>
             <CardTitle>Currency Status</CardTitle>
           </CardHeader>
           <CardContent>
-            {currencyItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No currency items on record.</p>
-            ) : (
-              <div className="space-y-2">
-                {currencyItems.map((item) => (
+            <div className="space-y-2">
+              {CURRENCY_ITEM_TYPES.map((itemType) => {
+                const item = currencyItems.find((c) => c.item_type === itemType);
+                return (
                   <div
-                    key={item.id}
+                    key={itemType}
                     className="flex items-center justify-between gap-2 rounded-lg border p-3"
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{CURRENCY_ITEM_LABELS[item.item_type]}</p>
+                      <p className="truncate font-medium">{CURRENCY_ITEM_LABELS[itemType]}</p>
                       <p className="text-xs text-muted-foreground">
-                        Last {formatDate(item.last_date)} · {item.validity_days}-day window
+                        {item
+                          ? `Last ${formatDate(item.last_date)} · ${item.validity_days}-day window`
+                          : "Not on file"}
                       </p>
                     </div>
-                    <StatusBadge status={currencyStatus(item)} />
+                    <div className="flex shrink-0 items-center gap-2">
+                      {item && <StatusBadge status={currencyStatus(item)} />}
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/personnel/${id}/currency/${itemType}`}>
+                          {item ? "Edit" : "Add"}
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -111,6 +111,36 @@ export async function getStanevalRecord(
   return data;
 }
 
+export async function getQualification(
+  pilotId: string,
+  qualificationId: string,
+): Promise<Qualification | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("qualifications")
+    .select("*")
+    .eq("pilot_id", pilotId)
+    .eq("id", qualificationId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function getCurrencyItem(
+  pilotId: string,
+  itemType: CurrencyItem["item_type"],
+): Promise<CurrencyItem | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("currency_items")
+    .select("*")
+    .eq("pilot_id", pilotId)
+    .eq("item_type", itemType)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function getRanks(): Promise<Rank[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("ranks").select("*").order("sort_order");
