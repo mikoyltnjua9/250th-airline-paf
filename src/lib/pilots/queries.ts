@@ -28,6 +28,60 @@ export async function getPilotDirectory(): Promise<DirectoryRow[]> {
   return (data ?? []) as unknown as DirectoryRow[];
 }
 
+export type WorkloadRow = {
+  pilotId: string;
+  fullName: string;
+  rankLabel: string;
+  unitSection: string | null;
+  hours: number;
+  flightCount: number;
+};
+
+/** Wing-wide rolling-window flight-hours workload, heaviest first. */
+export async function getDutyWorkload(windowDays = 30): Promise<WorkloadRow[]> {
+  const supabase = await createClient();
+
+  const since = new Date();
+  since.setDate(since.getDate() - windowDays);
+  const sinceIso = since.toISOString().slice(0, 10);
+
+  const [pilotsRes, flightsRes] = await Promise.all([
+    supabase
+      .from("pilots")
+      .select("id, full_name, rank_code, unit_section, ranks(label)")
+      .order("full_name"),
+    supabase.from("flights").select("pilot_id, flying_time_hours").gte("flight_date", sinceIso),
+  ]);
+
+  if (pilotsRes.error) throw pilotsRes.error;
+  if (flightsRes.error) throw flightsRes.error;
+
+  const byPilot = new Map<string, { hours: number; count: number }>();
+  for (const f of flightsRes.data ?? []) {
+    const entry = byPilot.get(f.pilot_id) ?? { hours: 0, count: 0 };
+    entry.hours += f.flying_time_hours ?? 0;
+    entry.count += 1;
+    byPilot.set(f.pilot_id, entry);
+  }
+
+  const rows: WorkloadRow[] = (pilotsRes.data ?? []).map((p) => {
+    const agg = byPilot.get(p.id) ?? { hours: 0, count: 0 };
+    const rankLabel =
+      (p as unknown as { ranks: { label: string } | null }).ranks?.label ?? p.rank_code;
+    return {
+      pilotId: p.id,
+      fullName: p.full_name,
+      rankLabel,
+      unitSection: p.unit_section,
+      hours: agg.hours,
+      flightCount: agg.count,
+    };
+  });
+
+  rows.sort((a, b) => b.hours - a.hours);
+  return rows;
+}
+
 export type PilotProfile = {
   pilot: Pilot;
   rankLabel: string;

@@ -35,7 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "License Verification", href: "/licenses", icon: ScanLine, disabled: true },
   { label: "Qualifications", href: "/qualifications", icon: GraduationCap, disabled: true },
   { label: "Flying Hours & History", href: "/flying-hours", icon: PlaneTakeoff, disabled: true },
-  { label: "Duty & Workload", href: "/duty-workload", icon: Gauge, disabled: true },
+  { label: "Duty & Workload", href: "/duty-workload", icon: Gauge },
   { label: "APE Status", href: "/ape", icon: HeartPulse, disabled: true },
   { label: "Currency Status", href: "/currency", icon: RefreshCcw, disabled: true },
   { label: "Training Records", href: "/training", icon: BookOpen, disabled: true },

@@ -1,6 +1,6 @@
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { StatTile } from "@/components/dashboard/stat-tile";
+import { StatTile } from "@/components/stat-tile";
 import { AlertsCard } from "@/components/dashboard/alerts-card";
 import { QualificationsCard } from "@/components/dashboard/qualifications-card";
 import { CurrencyCard } from "@/components/dashboard/currency-card";
