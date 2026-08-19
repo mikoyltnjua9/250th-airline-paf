@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { getDashboardOverview } from "@/lib/dashboard/queries";
+import { getAlerts } from "@/lib/alerts/queries";
 import {
   currencyStatus,
   CURRENCY_ITEM_LABELS,
@@ -211,8 +211,8 @@ const ALERT_CATEGORY_LABELS: Record<string, string> = {
 };
 
 async function alertsRows(): Promise<ReportRow[]> {
-  const overview = await getDashboardOverview();
-  return overview.alerts.map((a) => ({
+  const alerts = await getAlerts();
+  return alerts.map((a) => ({
     Pilot: a.pilotName,
     Category: ALERT_CATEGORY_LABELS[a.category] ?? capitalize(a.category),
     Detail: a.detail,
