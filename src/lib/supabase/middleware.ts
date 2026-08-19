@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const INACTIVITY_TIMEOUT_MS =
   (Number(process.env.INACTIVITY_TIMEOUT_MINUTES) || 15) * 60_000;
 
-const LAST_ACTIVITY_COOKIE = "last_activity";
+export const LAST_ACTIVITY_COOKIE = "last_activity";
 
 /** Routes that never require a session at all — public by design. */
 function isPublicRoute(pathname: string) {

@@ -25,8 +25,8 @@ export function WorkloadCard() {
           const pilot = findPilot(entry.pilotId);
           const widthPct = maxHours > 0 ? (entry.hoursLast30Days / maxHours) * 100 : 0;
           return (
-            <div key={entry.pilotId} className="flex items-center gap-3">
-              <span className="w-40 shrink-0 truncate text-sm">
+            <div key={entry.pilotId} className="flex items-center gap-2 sm:gap-3">
+              <span className="w-24 shrink-0 truncate text-sm sm:w-40">
                 {pilot ? `${pilot.rank} ${pilot.fullName}` : "Unknown pilot"}
               </span>
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
@@ -35,7 +35,7 @@ export function WorkloadCard() {
                   style={{ width: `${widthPct}%` }}
                 />
               </div>
-              <span className="w-14 shrink-0 text-right text-sm tabular-nums text-muted-foreground">
+              <span className="w-12 shrink-0 text-right text-sm tabular-nums text-muted-foreground sm:w-14">
                 {entry.hoursLast30Days.toFixed(1)}h
               </span>
             </div>
