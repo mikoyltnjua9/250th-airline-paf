@@ -5,20 +5,22 @@ import { Button } from "@/components/ui/button";
 import { StanevalForm } from "@/components/pilots/staneval-form";
 import { getPilotProfile, getStanevalRecord } from "@/lib/pilots/queries";
 import { updateStanevalRecord } from "@/app/(dashboard)/personnel/[id]/staneval/actions";
+import { parsePreservedValues } from "@/lib/forms/error-redirect";
 
 export default async function EditStanevalPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string; recordId: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, recordId } = await params;
-  const [profile, record, { error }] = await Promise.all([
+  const [profile, record, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getStanevalRecord(id, recordId),
     searchParams,
   ]);
+  const preserved = parsePreservedValues(values);
 
   if (!profile || !record) notFound();
 
@@ -43,12 +45,14 @@ export default async function EditStanevalPage({
             submitLabel="Save changes"
             error={error}
             hiddenFields={{ pilot_id: id, record_id: recordId }}
-            defaultValues={{
-              eval_date: record.eval_date,
-              status: record.status,
-              grading: record.grading ?? "",
-              next_due_date: record.next_due_date ?? "",
-            }}
+            defaultValues={
+              preserved ?? {
+                eval_date: record.eval_date,
+                status: record.status,
+                grading: record.grading ?? "",
+                next_due_date: record.next_due_date ?? "",
+              }
+            }
           />
         </CardContent>
       </Card>

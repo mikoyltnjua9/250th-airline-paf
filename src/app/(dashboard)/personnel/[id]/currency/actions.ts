@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { redirectWithFormError } from "@/lib/forms/error-redirect";
 
 const currencyFormSchema = z.object({
   item_type: z.enum(["last_flight", "ifr", "night_proficiency", "peculiar_runways"]),
@@ -25,10 +26,10 @@ export async function upsertCurrencyItem(formData: FormData) {
 
   if (!parsed.success) {
     const itemType = String(formData.get("item_type") ?? "");
-    redirect(
-      `/personnel/${pilotId}/currency/${itemType}?error=${encodeURIComponent(
-        parsed.error.issues[0]?.message ?? "Invalid input.",
-      )}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/currency/${itemType}`,
+      parsed.error.issues[0]?.message ?? "Invalid input.",
+      formData,
     );
   }
 
@@ -63,8 +64,10 @@ export async function upsertCurrencyItem(formData: FormData) {
       });
 
   if (error) {
-    redirect(
-      `/personnel/${pilotId}/currency/${parsed.data.item_type}?error=${encodeURIComponent(error.message)}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/currency/${parsed.data.item_type}`,
+      error.message,
+      formData,
     );
   }
 

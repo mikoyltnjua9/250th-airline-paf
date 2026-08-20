@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { redirectWithFormError } from "@/lib/forms/error-redirect";
 
 const qualificationFormSchema = z.object({
   aircraft_type_code: z.string().trim().min(1, "Aircraft type is required"),
@@ -17,10 +18,10 @@ export async function createQualification(formData: FormData) {
   const parsed = qualificationFormSchema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {
-    redirect(
-      `/personnel/${pilotId}/qualifications/new?error=${encodeURIComponent(
-        parsed.error.issues[0]?.message ?? "Invalid input.",
-      )}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/qualifications/new`,
+      parsed.error.issues[0]?.message ?? "Invalid input.",
+      formData,
     );
   }
 
@@ -40,9 +41,7 @@ export async function createQualification(formData: FormData) {
   });
 
   if (error) {
-    redirect(
-      `/personnel/${pilotId}/qualifications/new?error=${encodeURIComponent(error.message)}`,
-    );
+    redirectWithFormError(`/personnel/${pilotId}/qualifications/new`, error.message, formData);
   }
 
   revalidatePath(`/personnel/${pilotId}`);
@@ -55,10 +54,10 @@ export async function updateQualification(formData: FormData) {
   const parsed = qualificationFormSchema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {
-    redirect(
-      `/personnel/${pilotId}/qualifications/${qualificationId}/edit?error=${encodeURIComponent(
-        parsed.error.issues[0]?.message ?? "Invalid input.",
-      )}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/qualifications/${qualificationId}/edit`,
+      parsed.error.issues[0]?.message ?? "Invalid input.",
+      formData,
     );
   }
 
@@ -79,8 +78,10 @@ export async function updateQualification(formData: FormData) {
     .eq("id", qualificationId);
 
   if (error) {
-    redirect(
-      `/personnel/${pilotId}/qualifications/${qualificationId}/edit?error=${encodeURIComponent(error.message)}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/qualifications/${qualificationId}/edit`,
+      error.message,
+      formData,
     );
   }
 

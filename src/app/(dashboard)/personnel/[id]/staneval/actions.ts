@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { redirectWithFormError } from "@/lib/forms/error-redirect";
 
 const stanevalFormSchema = z.object({
   eval_date: z.string().trim().min(1, "Evaluation date is required"),
@@ -17,10 +18,10 @@ export async function createStanevalRecord(formData: FormData) {
   const parsed = stanevalFormSchema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {
-    redirect(
-      `/personnel/${pilotId}/staneval/new?error=${encodeURIComponent(
-        parsed.error.issues[0]?.message ?? "Invalid input.",
-      )}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/staneval/new`,
+      parsed.error.issues[0]?.message ?? "Invalid input.",
+      formData,
     );
   }
 
@@ -40,7 +41,7 @@ export async function createStanevalRecord(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/personnel/${pilotId}/staneval/new?error=${encodeURIComponent(error.message)}`);
+    redirectWithFormError(`/personnel/${pilotId}/staneval/new`, error.message, formData);
   }
 
   revalidatePath(`/personnel/${pilotId}`);
@@ -53,10 +54,10 @@ export async function updateStanevalRecord(formData: FormData) {
   const parsed = stanevalFormSchema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {
-    redirect(
-      `/personnel/${pilotId}/staneval/${recordId}/edit?error=${encodeURIComponent(
-        parsed.error.issues[0]?.message ?? "Invalid input.",
-      )}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/staneval/${recordId}/edit`,
+      parsed.error.issues[0]?.message ?? "Invalid input.",
+      formData,
     );
   }
 
@@ -77,9 +78,7 @@ export async function updateStanevalRecord(formData: FormData) {
     .eq("id", recordId);
 
   if (error) {
-    redirect(
-      `/personnel/${pilotId}/staneval/${recordId}/edit?error=${encodeURIComponent(error.message)}`,
-    );
+    redirectWithFormError(`/personnel/${pilotId}/staneval/${recordId}/edit`, error.message, formData);
   }
 
   revalidatePath(`/personnel/${pilotId}`);

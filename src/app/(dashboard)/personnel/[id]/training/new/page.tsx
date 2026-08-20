@@ -5,16 +5,18 @@ import { Button } from "@/components/ui/button";
 import { TrainingForm } from "@/components/pilots/training-form";
 import { getPilotProfile } from "@/lib/pilots/queries";
 import { createTrainingRecord } from "@/app/(dashboard)/personnel/[id]/training/actions";
+import { parsePreservedValues } from "@/lib/forms/error-redirect";
 
 export default async function NewTrainingRecordPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id } = await params;
-  const [profile, { error }] = await Promise.all([getPilotProfile(id), searchParams]);
+  const [profile, { error, values }] = await Promise.all([getPilotProfile(id), searchParams]);
+  const preserved = parsePreservedValues(values);
 
   if (!profile) notFound();
 
@@ -39,6 +41,7 @@ export default async function NewTrainingRecordPage({
             submitLabel="Save record"
             error={error}
             hiddenFields={{ pilot_id: id }}
+            defaultValues={preserved}
           />
         </CardContent>
       </Card>

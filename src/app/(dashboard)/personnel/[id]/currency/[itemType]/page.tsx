@@ -6,6 +6,7 @@ import { CurrencyForm } from "@/components/pilots/currency-form";
 import { getPilotProfile, getCurrencyItem } from "@/lib/pilots/queries";
 import { upsertCurrencyItem } from "@/app/(dashboard)/personnel/[id]/currency/actions";
 import { CURRENCY_ITEM_LABELS, type CurrencyItemType } from "@/lib/types/pilot";
+import { parsePreservedValues } from "@/lib/forms/error-redirect";
 
 const VALID_ITEM_TYPES = Object.keys(CURRENCY_ITEM_LABELS) as CurrencyItemType[];
 
@@ -14,10 +15,11 @@ export default async function CurrencyItemPage({
   searchParams,
 }: {
   params: Promise<{ id: string; itemType: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, itemType } = await params;
-  const { error } = await searchParams;
+  const { error, values } = await searchParams;
+  const preserved = parsePreservedValues(values);
 
   if (!VALID_ITEM_TYPES.includes(itemType as CurrencyItemType)) notFound();
   const validItemType = itemType as CurrencyItemType;
@@ -52,12 +54,13 @@ export default async function CurrencyItemPage({
             error={error}
             hiddenFields={{ pilot_id: id, item_type: validItemType }}
             defaultValues={
-              item
+              preserved ??
+              (item
                 ? {
                     last_date: item.last_date,
                     validity_days: String(item.validity_days),
                   }
-                : undefined
+                : undefined)
             }
           />
         </CardContent>

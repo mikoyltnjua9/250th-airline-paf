@@ -5,20 +5,22 @@ import { Button } from "@/components/ui/button";
 import { ApeForm } from "@/components/pilots/ape-form";
 import { getPilotProfile, getApeRecord } from "@/lib/pilots/queries";
 import { updateApeRecord } from "@/app/(dashboard)/personnel/[id]/ape/actions";
+import { parsePreservedValues } from "@/lib/forms/error-redirect";
 
 export default async function EditApePage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string; recordId: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, recordId } = await params;
-  const [profile, record, { error }] = await Promise.all([
+  const [profile, record, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getApeRecord(id, recordId),
     searchParams,
   ]);
+  const preserved = parsePreservedValues(values);
 
   if (!profile || !record) notFound();
 
@@ -43,12 +45,14 @@ export default async function EditApePage({
             submitLabel="Save changes"
             error={error}
             hiddenFields={{ pilot_id: id, record_id: recordId }}
-            defaultValues={{
-              last_ape_date: record.last_ape_date,
-              next_due_date: record.next_due_date,
-              fit_to_fly: String(record.fit_to_fly),
-              classification: record.classification ?? "",
-            }}
+            defaultValues={
+              preserved ?? {
+                last_ape_date: record.last_ape_date,
+                next_due_date: record.next_due_date,
+                fit_to_fly: String(record.fit_to_fly),
+                classification: record.classification ?? "",
+              }
+            }
           />
         </CardContent>
       </Card>

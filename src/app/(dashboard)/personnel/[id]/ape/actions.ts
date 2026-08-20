@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { redirectWithFormError } from "@/lib/forms/error-redirect";
 
 const apeFormSchema = z.object({
   last_ape_date: z.string().trim().min(1, "Last APE date is required"),
@@ -17,10 +18,10 @@ export async function createApeRecord(formData: FormData) {
   const parsed = apeFormSchema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {
-    redirect(
-      `/personnel/${pilotId}/ape/new?error=${encodeURIComponent(
-        parsed.error.issues[0]?.message ?? "Invalid input.",
-      )}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/ape/new`,
+      parsed.error.issues[0]?.message ?? "Invalid input.",
+      formData,
     );
   }
 
@@ -40,7 +41,7 @@ export async function createApeRecord(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/personnel/${pilotId}/ape/new?error=${encodeURIComponent(error.message)}`);
+    redirectWithFormError(`/personnel/${pilotId}/ape/new`, error.message, formData);
   }
 
   revalidatePath(`/personnel/${pilotId}`);
@@ -53,10 +54,10 @@ export async function updateApeRecord(formData: FormData) {
   const parsed = apeFormSchema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {
-    redirect(
-      `/personnel/${pilotId}/ape/${recordId}/edit?error=${encodeURIComponent(
-        parsed.error.issues[0]?.message ?? "Invalid input.",
-      )}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/ape/${recordId}/edit`,
+      parsed.error.issues[0]?.message ?? "Invalid input.",
+      formData,
     );
   }
 
@@ -77,9 +78,7 @@ export async function updateApeRecord(formData: FormData) {
     .eq("id", recordId);
 
   if (error) {
-    redirect(
-      `/personnel/${pilotId}/ape/${recordId}/edit?error=${encodeURIComponent(error.message)}`,
-    );
+    redirectWithFormError(`/personnel/${pilotId}/ape/${recordId}/edit`, error.message, formData);
   }
 
   revalidatePath(`/personnel/${pilotId}`);

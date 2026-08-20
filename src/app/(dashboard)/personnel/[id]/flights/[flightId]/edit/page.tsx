@@ -5,21 +5,23 @@ import { Button } from "@/components/ui/button";
 import { FlightForm } from "@/components/pilots/flight-form";
 import { getPilotProfile, getFlight, getAircraftTypes } from "@/lib/pilots/queries";
 import { updateFlight } from "@/app/(dashboard)/personnel/[id]/flights/actions";
+import { parsePreservedValues } from "@/lib/forms/error-redirect";
 
 export default async function EditFlightPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string; flightId: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, flightId } = await params;
-  const [profile, flight, aircraftTypes, { error }] = await Promise.all([
+  const [profile, flight, aircraftTypes, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getFlight(id, flightId),
     getAircraftTypes(),
     searchParams,
   ]);
+  const preserved = parsePreservedValues(values);
 
   if (!profile || !flight) notFound();
 
@@ -45,14 +47,17 @@ export default async function EditFlightPage({
             submitLabel="Save changes"
             error={error}
             hiddenFields={{ pilot_id: id, flight_id: flightId }}
-            defaultValues={{
-              flight_date: flight.flight_date,
-              aircraft_type_code: flight.aircraft_type_code,
-              route: flight.route ?? "",
-              duty: flight.duty,
-              flying_time_hours: String(flight.flying_time_hours),
-              block_time_hours: flight.block_time_hours != null ? String(flight.block_time_hours) : "",
-            }}
+            defaultValues={
+              preserved ?? {
+                flight_date: flight.flight_date,
+                aircraft_type_code: flight.aircraft_type_code,
+                route: flight.route ?? "",
+                duty: flight.duty,
+                flying_time_hours: String(flight.flying_time_hours),
+                block_time_hours:
+                  flight.block_time_hours != null ? String(flight.block_time_hours) : "",
+              }
+            }
           />
         </CardContent>
       </Card>

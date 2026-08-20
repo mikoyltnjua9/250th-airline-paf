@@ -5,21 +5,23 @@ import { Button } from "@/components/ui/button";
 import { QualificationForm } from "@/components/pilots/qualification-form";
 import { getPilotProfile, getQualification, getAircraftTypes } from "@/lib/pilots/queries";
 import { updateQualification } from "@/app/(dashboard)/personnel/[id]/qualifications/actions";
+import { parsePreservedValues } from "@/lib/forms/error-redirect";
 
 export default async function EditQualificationPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string; qualificationId: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, qualificationId } = await params;
-  const [profile, qualification, aircraftTypes, { error }] = await Promise.all([
+  const [profile, qualification, aircraftTypes, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getQualification(id, qualificationId),
     getAircraftTypes(),
     searchParams,
   ]);
+  const preserved = parsePreservedValues(values);
 
   if (!profile || !qualification) notFound();
 
@@ -45,12 +47,14 @@ export default async function EditQualificationPage({
             submitLabel="Save changes"
             error={error}
             hiddenFields={{ pilot_id: id, qualification_id: qualificationId }}
-            defaultValues={{
-              aircraft_type_code: qualification.aircraft_type_code,
-              status: qualification.status,
-              date_earned: qualification.date_earned ?? "",
-              expiry_date: qualification.expiry_date ?? "",
-            }}
+            defaultValues={
+              preserved ?? {
+                aircraft_type_code: qualification.aircraft_type_code,
+                status: qualification.status,
+                date_earned: qualification.date_earned ?? "",
+                expiry_date: qualification.expiry_date ?? "",
+              }
+            }
           />
         </CardContent>
       </Card>

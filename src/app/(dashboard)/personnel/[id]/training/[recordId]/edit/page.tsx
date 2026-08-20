@@ -5,20 +5,22 @@ import { Button } from "@/components/ui/button";
 import { TrainingForm } from "@/components/pilots/training-form";
 import { getPilotProfile, getTrainingRecord } from "@/lib/pilots/queries";
 import { updateTrainingRecord } from "@/app/(dashboard)/personnel/[id]/training/actions";
+import { parsePreservedValues } from "@/lib/forms/error-redirect";
 
 export default async function EditTrainingRecordPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string; recordId: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, recordId } = await params;
-  const [profile, record, { error }] = await Promise.all([
+  const [profile, record, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getTrainingRecord(id, recordId),
     searchParams,
   ]);
+  const preserved = parsePreservedValues(values);
 
   if (!profile || !record) notFound();
 
@@ -43,11 +45,13 @@ export default async function EditTrainingRecordPage({
             submitLabel="Save changes"
             error={error}
             hiddenFields={{ pilot_id: id, record_id: recordId }}
-            defaultValues={{
-              training_type: record.training_type,
-              status: record.status,
-              training_date: record.training_date,
-            }}
+            defaultValues={
+              preserved ?? {
+                training_type: record.training_type,
+                status: record.status,
+                training_date: record.training_date,
+              }
+            }
           />
         </CardContent>
       </Card>

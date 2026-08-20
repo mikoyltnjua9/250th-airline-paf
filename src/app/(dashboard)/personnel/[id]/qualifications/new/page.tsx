@@ -5,20 +5,22 @@ import { Button } from "@/components/ui/button";
 import { QualificationForm } from "@/components/pilots/qualification-form";
 import { getPilotProfile, getAircraftTypes } from "@/lib/pilots/queries";
 import { createQualification } from "@/app/(dashboard)/personnel/[id]/qualifications/actions";
+import { parsePreservedValues } from "@/lib/forms/error-redirect";
 
 export default async function NewQualificationPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id } = await params;
-  const [profile, aircraftTypes, { error }] = await Promise.all([
+  const [profile, aircraftTypes, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getAircraftTypes(),
     searchParams,
   ]);
+  const preserved = parsePreservedValues(values);
 
   if (!profile) notFound();
 
@@ -44,6 +46,7 @@ export default async function NewQualificationPage({
             submitLabel="Save qualification"
             error={error}
             hiddenFields={{ pilot_id: id }}
+            defaultValues={preserved}
           />
         </CardContent>
       </Card>

@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { PilotForm } from "@/components/pilots/pilot-form";
 import { getRanks } from "@/lib/pilots/queries";
 import { createPilot } from "@/app/(dashboard)/personnel/actions";
+import { parsePreservedValues } from "@/lib/forms/error-redirect";
 
 export default async function NewPilotPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; values?: string }>;
 }) {
-  const [ranks, { error }] = await Promise.all([getRanks(), searchParams]);
+  const [ranks, { error, values }] = await Promise.all([getRanks(), searchParams]);
+  const preserved = parsePreservedValues(values);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -26,7 +28,13 @@ export default async function NewPilotPage({
           <CardTitle>New pilot record</CardTitle>
         </CardHeader>
         <CardContent>
-          <PilotForm ranks={ranks} action={createPilot} submitLabel="Create pilot" error={error} />
+          <PilotForm
+            ranks={ranks}
+            action={createPilot}
+            submitLabel="Create pilot"
+            error={error}
+            defaultValues={preserved}
+          />
         </CardContent>
       </Card>
     </div>

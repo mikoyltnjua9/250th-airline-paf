@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { redirectWithFormError } from "@/lib/forms/error-redirect";
 
 const flightFormSchema = z.object({
   flight_date: z.string().trim().min(1, "Flight date is required"),
@@ -19,10 +20,10 @@ export async function createFlight(formData: FormData) {
   const parsed = flightFormSchema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {
-    redirect(
-      `/personnel/${pilotId}/flights/new?error=${encodeURIComponent(
-        parsed.error.issues[0]?.message ?? "Invalid input.",
-      )}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/flights/new`,
+      parsed.error.issues[0]?.message ?? "Invalid input.",
+      formData,
     );
   }
 
@@ -43,7 +44,7 @@ export async function createFlight(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/personnel/${pilotId}/flights/new?error=${encodeURIComponent(error.message)}`);
+    redirectWithFormError(`/personnel/${pilotId}/flights/new`, error.message, formData);
   }
 
   revalidatePath(`/personnel/${pilotId}`);
@@ -56,10 +57,10 @@ export async function updateFlight(formData: FormData) {
   const parsed = flightFormSchema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {
-    redirect(
-      `/personnel/${pilotId}/flights/${flightId}/edit?error=${encodeURIComponent(
-        parsed.error.issues[0]?.message ?? "Invalid input.",
-      )}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/flights/${flightId}/edit`,
+      parsed.error.issues[0]?.message ?? "Invalid input.",
+      formData,
     );
   }
 
@@ -78,9 +79,7 @@ export async function updateFlight(formData: FormData) {
     .eq("id", flightId);
 
   if (error) {
-    redirect(
-      `/personnel/${pilotId}/flights/${flightId}/edit?error=${encodeURIComponent(error.message)}`,
-    );
+    redirectWithFormError(`/personnel/${pilotId}/flights/${flightId}/edit`, error.message, formData);
   }
 
   revalidatePath(`/personnel/${pilotId}`);

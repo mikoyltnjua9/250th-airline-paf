@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { redirectWithFormError } from "@/lib/forms/error-redirect";
 
 const pilotFormSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required"),
@@ -26,8 +27,10 @@ function friendlyDbError(message: string): string {
 export async function createPilot(formData: FormData) {
   const parsed = pilotFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    redirect(
-      `/personnel/new?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input.")}`,
+    redirectWithFormError(
+      "/personnel/new",
+      parsed.error.issues[0]?.message ?? "Invalid input.",
+      formData,
     );
   }
 
@@ -49,7 +52,7 @@ export async function createPilot(formData: FormData) {
     .single();
 
   if (pilotError) {
-    redirect(`/personnel/new?error=${encodeURIComponent(friendlyDbError(pilotError.message))}`);
+    redirectWithFormError("/personnel/new", friendlyDbError(pilotError.message), formData);
   }
 
   const { error: licenseError } = await supabase.from("licenses").insert({
@@ -65,7 +68,7 @@ export async function createPilot(formData: FormData) {
   if (licenseError) {
     // Compensate: don't leave a pilot record with no license behind.
     await supabase.from("pilots").delete().eq("id", pilot.id);
-    redirect(`/personnel/new?error=${encodeURIComponent(friendlyDbError(licenseError.message))}`);
+    redirectWithFormError("/personnel/new", friendlyDbError(licenseError.message), formData);
   }
 
   revalidatePath("/personnel");
@@ -78,8 +81,10 @@ export async function updatePilot(formData: FormData) {
 
   const parsed = pilotFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    redirect(
-      `/personnel/${pilotId}/edit?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input.")}`,
+    redirectWithFormError(
+      `/personnel/${pilotId}/edit`,
+      parsed.error.issues[0]?.message ?? "Invalid input.",
+      formData,
     );
   }
 
@@ -95,7 +100,7 @@ export async function updatePilot(formData: FormData) {
     .eq("id", pilotId);
 
   if (pilotError) {
-    redirect(`/personnel/${pilotId}/edit?error=${encodeURIComponent(friendlyDbError(pilotError.message))}`);
+    redirectWithFormError(`/personnel/${pilotId}/edit`, friendlyDbError(pilotError.message), formData);
   }
 
   const { error: licenseError } = await supabase
@@ -104,9 +109,7 @@ export async function updatePilot(formData: FormData) {
     .eq("id", licenseId);
 
   if (licenseError) {
-    redirect(
-      `/personnel/${pilotId}/edit?error=${encodeURIComponent(friendlyDbError(licenseError.message))}`,
-    );
+    redirectWithFormError(`/personnel/${pilotId}/edit`, friendlyDbError(licenseError.message), formData);
   }
 
   revalidatePath("/personnel");
