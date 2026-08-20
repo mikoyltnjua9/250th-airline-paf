@@ -38,9 +38,6 @@ export default async function PersonnelPage() {
                   <p className="truncate font-medium">
                     {pilot.ranks?.label ?? pilot.rank_code} {pilot.full_name}
                   </p>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {pilot.unit_section ?? "—"}
-                  </p>
                 </div>
                 {licenseStatus && <LicenseStatusBadge status={licenseStatus} />}
               </Link>

@@ -95,9 +95,7 @@ export default async function PilotProfilePage({
               <h1 className="text-2xl font-semibold tracking-tight">
                 {rankLabel} {pilot.full_name}
               </h1>
-              <p className="text-muted-foreground">
-                {pilot.position} · {pilot.unit_section ?? "Unit not set"}
-              </p>
+              <p className="text-muted-foreground">{pilot.position}</p>
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
               <div>

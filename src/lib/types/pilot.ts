@@ -28,7 +28,6 @@ export type Pilot = {
   full_name: string;
   rank_code: string;
   afsn: string;
-  unit_section: string | null;
   position: string;
   photo_url: string | null;
   created_at: string;

@@ -13,7 +13,7 @@ import type {
   AircraftType,
 } from "@/lib/types/pilot";
 
-export type DirectoryRow = Pick<Pilot, "id" | "full_name" | "rank_code" | "unit_section"> & {
+export type DirectoryRow = Pick<Pilot, "id" | "full_name" | "rank_code"> & {
   ranks: { label: string } | null;
   licenses: { status: License["status"] }[];
 };
@@ -22,7 +22,7 @@ export async function getPilotDirectory(): Promise<DirectoryRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pilots")
-    .select("id, full_name, rank_code, unit_section, ranks(label), licenses(status)")
+    .select("id, full_name, rank_code, ranks(label), licenses(status)")
     .order("full_name");
 
   if (error) throw error;
@@ -33,7 +33,6 @@ export type WorkloadRow = {
   pilotId: string;
   fullName: string;
   rankLabel: string;
-  unitSection: string | null;
   hours: number;
   flightCount: number;
 };
@@ -49,7 +48,7 @@ export async function getDutyWorkload(windowDays = 30): Promise<WorkloadRow[]> {
   const [pilotsRes, flightsRes] = await Promise.all([
     supabase
       .from("pilots")
-      .select("id, full_name, rank_code, unit_section, ranks(label)")
+      .select("id, full_name, rank_code, ranks(label)")
       .order("full_name"),
     supabase.from("flights").select("pilot_id, flying_time_hours").gte("flight_date", sinceIso),
   ]);
@@ -73,7 +72,6 @@ export async function getDutyWorkload(windowDays = 30): Promise<WorkloadRow[]> {
       pilotId: p.id,
       fullName: p.full_name,
       rankLabel,
-      unitSection: p.unit_section,
       hours: agg.hours,
       flightCount: agg.count,
     };

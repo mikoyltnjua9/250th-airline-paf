@@ -71,7 +71,7 @@ async function rosterRows(): Promise<ReportRow[]> {
   const { data, error } = await supabase
     .from("pilots")
     .select(
-      "full_name, afsn, unit_section, position, rank_code, ranks(label), licenses(license_no, status, date_expires)",
+      "full_name, afsn, position, rank_code, ranks(label), licenses(license_no, status, date_expires)",
     )
     .order("full_name");
   if (error) throw error;
@@ -79,7 +79,6 @@ async function rosterRows(): Promise<ReportRow[]> {
   return ((data ?? []) as unknown as {
     full_name: string;
     afsn: string;
-    unit_section: string | null;
     position: string;
     rank_code: string;
     ranks: { label: string } | null;
@@ -90,7 +89,6 @@ async function rosterRows(): Promise<ReportRow[]> {
       Rank: p.ranks?.label ?? p.rank_code,
       "Full Name": p.full_name,
       AFSN: p.afsn,
-      "Unit/Section": p.unit_section ?? "—",
       Position: p.position,
       "License No.": license?.license_no ?? "—",
       "License Status": license ? LICENSE_STATUS_LABELS[license.status] : "No license on file",
@@ -228,7 +226,7 @@ async function flyingHoursRows(): Promise<ReportRow[]> {
   const [pilotsRes, flightsRes] = await Promise.all([
     supabase
       .from("pilots")
-      .select("id, full_name, rank_code, unit_section, ranks(label)")
+      .select("id, full_name, rank_code, ranks(label)")
       .order("full_name"),
     supabase.from("flights").select("pilot_id, flying_time_hours, block_time_hours"),
   ]);
@@ -250,7 +248,6 @@ async function flyingHoursRows(): Promise<ReportRow[]> {
     return {
       Rank: rankLabel,
       "Full Name": p.full_name,
-      "Unit/Section": p.unit_section ?? "—",
       "All-Time Flying Hours": Number(agg.flying.toFixed(1)),
       "All-Time Block Hours": Number(agg.block.toFixed(1)),
       "Flight Count": agg.count,
@@ -264,12 +261,11 @@ export const REPORTS: ReportDefinition[] = [
   {
     slug: "roster",
     title: "Personnel Roster",
-    description: "Every pilot on record with rank, unit, and current license status.",
+    description: "Every pilot on record with rank and current license status.",
     columns: [
       { key: "Rank", header: "Rank" },
       { key: "Full Name", header: "Full Name" },
       { key: "AFSN", header: "AFSN" },
-      { key: "Unit/Section", header: "Unit/Section" },
       { key: "Position", header: "Position" },
       { key: "License No.", header: "License No." },
       { key: "License Status", header: "License Status" },
@@ -339,7 +335,6 @@ export const REPORTS: ReportDefinition[] = [
     columns: [
       { key: "Rank", header: "Rank" },
       { key: "Full Name", header: "Full Name" },
-      { key: "Unit/Section", header: "Unit/Section" },
       { key: "All-Time Flying Hours", header: "All-Time Flying Hours", numeric: true },
       { key: "All-Time Block Hours", header: "All-Time Block Hours", numeric: true },
       { key: "Flight Count", header: "Flight Count", numeric: true },

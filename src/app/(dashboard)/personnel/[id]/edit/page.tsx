@@ -51,7 +51,6 @@ export default async function EditPilotPage({
                 full_name: pilot.full_name,
                 rank_code: pilot.rank_code,
                 afsn: pilot.afsn,
-                unit_section: pilot.unit_section ?? "",
                 position: pilot.position,
                 license_no: license?.license_no ?? "",
                 date_issued: license?.date_issued ?? "",

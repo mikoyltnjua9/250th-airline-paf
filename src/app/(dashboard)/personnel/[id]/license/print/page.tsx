@@ -61,9 +61,7 @@ export default async function PrintLicensePage({
                   <h1 className="text-xl font-semibold tracking-tight">
                     {rankLabel} {pilot.full_name}
                   </h1>
-                  <p className="text-sm text-muted-foreground">
-                    {pilot.position} · {pilot.unit_section ?? "Unit not set"}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{pilot.position}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div>

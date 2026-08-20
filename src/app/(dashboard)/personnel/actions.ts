@@ -10,7 +10,6 @@ const pilotFormSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required"),
   rank_code: z.string().trim().min(1, "Rank is required"),
   afsn: z.string().trim().min(1, "AFSN is required"),
-  unit_section: z.string().trim().optional(),
   position: z.string().trim().min(1).default("Pilot"),
   license_no: z.string().trim().min(1, "License number is required"),
   date_issued: z.string().trim().min(1, "Date issued is required"),
@@ -44,7 +43,6 @@ export async function createPilot(formData: FormData) {
     .from("pilots")
     .insert({
       ...pilotFields,
-      unit_section: pilotFields.unit_section || null,
       created_by: user?.id,
       updated_by: user?.id,
     })
@@ -96,7 +94,7 @@ export async function updatePilot(formData: FormData) {
 
   const { error: pilotError } = await supabase
     .from("pilots")
-    .update({ ...pilotFields, unit_section: pilotFields.unit_section || null, updated_by: user?.id })
+    .update({ ...pilotFields, updated_by: user?.id })
     .eq("id", pilotId);
 
   if (pilotError) {

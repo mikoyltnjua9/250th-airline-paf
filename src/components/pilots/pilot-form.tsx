@@ -9,7 +9,6 @@ export type PilotFormDefaults = Partial<{
   full_name: string;
   rank_code: string;
   afsn: string;
-  unit_section: string;
   position: string;
   license_no: string;
   date_issued: string;
@@ -69,10 +68,6 @@ export function PilotForm({
           <div className="space-y-2">
             <Label htmlFor="afsn">AFSN</Label>
             <Input id="afsn" name="afsn" defaultValue={defaultValues?.afsn} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="unit_section">Unit / Section</Label>
-            <Input id="unit_section" name="unit_section" defaultValue={defaultValues?.unit_section} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="position">Position</Label>
