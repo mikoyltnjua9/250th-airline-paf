@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { PilotAvatar } from "@/components/pilots/pilot-avatar";
 import { VerifyQr } from "@/components/pilots/verify-qr";
+import { AlertsCard } from "@/components/dashboard/alerts-card";
 import {
   StatusBadge,
   LicenseStatusBadge,
@@ -26,6 +27,7 @@ import {
   TrainingStatusBadge,
 } from "@/components/status-badge";
 import { getPilotProfile } from "@/lib/pilots/queries";
+import { getAlerts } from "@/lib/alerts/queries";
 import {
   currencyStatus,
   CURRENCY_ITEM_LABELS,
@@ -49,9 +51,11 @@ export default async function PilotProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const profile = await getPilotProfile(id);
+  const [profile, allAlerts] = await Promise.all([getPilotProfile(id), getAlerts()]);
 
   if (!profile) notFound();
+
+  const pilotAlerts = allAlerts.filter((a) => a.pilotId === id);
 
   const {
     pilot,
@@ -72,9 +76,14 @@ export default async function PilotProfilePage({
         <Button asChild variant="outline" size="sm">
           <Link href="/personnel">← Directory</Link>
         </Button>
-        <Button asChild size="sm">
-          <Link href={`/personnel/${id}/edit`}>Edit Pilot</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/personnel/${id}/license/print`}>Print License</Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link href={`/personnel/${id}/edit`}>Edit Pilot</Link>
+          </Button>
+        </div>
       </div>
 
       {/* Personal info + license */}
@@ -117,6 +126,8 @@ export default async function PilotProfilePage({
           {license && <VerifyQr token={license.public_verify_token} />}
         </CardContent>
       </Card>
+
+      <AlertsCard alerts={pilotAlerts} />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {/* Equipment qualifications */}
