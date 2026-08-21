@@ -1,22 +1,16 @@
 /**
- * Placeholder unit crest — a generic navy/gold roundel with a star.
- * Swap for the official 250th PAW crest once brand files are provided;
- * this component is the only place that needs to change.
+ * Official 250th Presidential Airlift Wing crest, supplied by the client
+ * 2026-08-22 (public/crest.png, downscaled from the original 1080x1080 to
+ * 256x256 -- plenty for the largest on-screen use at 64px). Replaced the
+ * earlier navy/gold placeholder roundel. This component is still the only
+ * place that needs to change if the art is ever updated again.
  */
 export function Crest({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 64 64"
-      className={className}
-      role="img"
-      aria-label="250th Presidential Airlift Wing crest (placeholder)"
-    >
-      <circle cx="32" cy="32" r="30" fill="var(--navy)" stroke="var(--gold)" strokeWidth="3" />
-      <circle cx="32" cy="32" r="24" fill="none" stroke="var(--gold)" strokeWidth="1" opacity="0.5" />
-      <path
-        d="M32 14l4.9 10.1 11.1 1.5-8 7.9 1.9 11.1L32 39.4l-9.9 5.2 1.9-11.1-8-7.9 11.1-1.5z"
-        fill="var(--gold)"
-      />
-    </svg>
+    // Fixed small branding mark rendered at many different Tailwind-driven
+    // sizes across the app -- a plain <img> keeps that as simple as the
+    // SVG it replaced, so next/image's LCP optimization isn't worth it here.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/crest.png" alt="250th Presidential Airlift Wing crest" className={className} />
   );
 }
