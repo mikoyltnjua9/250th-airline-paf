@@ -104,6 +104,15 @@ export function PilotForm({
               defaultValue={defaultValues?.position ?? "Fixed-Wing Pilot"}
               required
             >
+              {/* If the stored value predates this dropdown (e.g. the old
+                  free-text "Pilot" default) it won't match any option below.
+                  Surface it explicitly instead of letting the browser
+                  silently fall back to the first option -- that would save
+                  the wrong value the moment this form is submitted without
+                  someone noticing and re-selecting the real position. */}
+              {defaultValues?.position && !(POSITIONS as readonly string[]).includes(defaultValues.position) && (
+                <option value={defaultValues.position}>{defaultValues.position} (unrecognized — please update)</option>
+              )}
               {POSITIONS.map((position) => (
                 <option key={position} value={position}>
                   {position}
