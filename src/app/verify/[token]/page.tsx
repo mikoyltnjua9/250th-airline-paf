@@ -17,6 +17,7 @@ type VerifyResult = {
   fullName: string;
   rankLabel: string;
   fitToFly: boolean;
+  photoUrl: string | null;
 };
 
 async function lookupPilot(token: string): Promise<VerifyResult | null> {
@@ -25,13 +26,13 @@ async function lookupPilot(token: string): Promise<VerifyResult | null> {
   if (!UUID_RE.test(token)) return null;
 
   // Service-role client: this route is intentionally reachable with no
-  // login, so it can't rely on RLS. Only these three fields are ever
+  // login, so it can't rely on RLS. Only these four fields are ever
   // selected — no AFSN, no position, no quals, no contact info. That
   // allow-list is the actual security boundary here, not RLS.
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("pilots")
-    .select("full_name, rank_code, fit_to_fly, ranks(label)")
+    .select("full_name, rank_code, fit_to_fly, photo_url, ranks(label)")
     .eq("public_verify_token", token)
     .maybeSingle();
 
@@ -43,6 +44,7 @@ async function lookupPilot(token: string): Promise<VerifyResult | null> {
     fullName: data.full_name,
     rankLabel: ranks?.label ?? data.rank_code,
     fitToFly: data.fit_to_fly,
+    photoUrl: data.photo_url,
   };
 }
 
@@ -71,7 +73,11 @@ export default async function VerifyPage({
           <CardContent className="pt-2">
             {result ? (
               <div className="flex flex-col items-center gap-3 py-2 text-center">
-                <PilotAvatar fullName={result.fullName} className="h-16 w-16 text-xl" />
+                <PilotAvatar
+                  fullName={result.fullName}
+                  photoUrl={result.photoUrl}
+                  className="h-16 w-16 text-xl"
+                />
                 <p className="text-lg font-semibold">
                   {result.rankLabel} {result.fullName}
                 </p>

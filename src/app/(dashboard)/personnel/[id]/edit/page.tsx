@@ -52,6 +52,7 @@ export default async function EditPilotPage({
                 fit_to_fly: String(pilot.fit_to_fly),
               }
             }
+            currentPhotoUrl={pilot.photo_url}
           />
         </CardContent>
       </Card>

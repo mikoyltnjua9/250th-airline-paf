@@ -31,7 +31,7 @@ export default async function PersonnelPage() {
               href={`/personnel/${pilot.id}`}
               className="flex items-center gap-4 p-4 transition-colors hover:bg-muted/50"
             >
-              <PilotAvatar fullName={pilot.full_name} />
+              <PilotAvatar fullName={pilot.full_name} photoUrl={pilot.photo_url} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">
                   {pilot.ranks?.label ?? pilot.rank_code} {pilot.full_name}

@@ -88,7 +88,11 @@ export default async function PilotProfilePage({
       {/* Personal info */}
       <Card>
         <CardContent className="flex flex-col gap-6 sm:flex-row sm:items-start">
-          <PilotAvatar fullName={pilot.full_name} className="h-20 w-20 text-2xl" />
+          <PilotAvatar
+            fullName={pilot.full_name}
+            photoUrl={pilot.photo_url}
+            className="h-20 w-20 text-2xl"
+          />
           <div className="flex-1 space-y-4">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">

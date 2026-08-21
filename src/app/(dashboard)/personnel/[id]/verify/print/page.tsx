@@ -41,7 +41,11 @@ export default async function PrintIdCardPage({
 
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-            <PilotAvatar fullName={pilot.full_name} className="h-20 w-20 text-2xl" />
+            <PilotAvatar
+              fullName={pilot.full_name}
+              photoUrl={pilot.photo_url}
+              className="h-20 w-20 text-2xl"
+            />
             <div className="space-y-3 text-center sm:text-left">
               <div>
                 <h1 className="text-xl font-semibold tracking-tight">

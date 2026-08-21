@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PilotAvatar } from "@/components/pilots/pilot-avatar";
 import { POSITIONS, type Rank } from "@/lib/types/pilot";
 
 export type PilotFormDefaults = Partial<{
@@ -20,6 +21,7 @@ export function PilotForm({
   defaultValues,
   hiddenFields,
   error,
+  currentPhotoUrl,
 }: {
   ranks: Rank[];
   action: (formData: FormData) => void;
@@ -27,6 +29,10 @@ export function PilotForm({
   defaultValues?: PilotFormDefaults;
   hiddenFields?: Record<string, string>;
   error?: string;
+  /** Existing photo, for the preview thumbnail on Edit. File inputs can't
+   * be pre-filled with a value for security reasons, so this is a display-
+   * only prop, separate from defaultValues. */
+  currentPhotoUrl?: string | null;
 }) {
   return (
     <form action={action} className="space-y-6">
@@ -45,6 +51,30 @@ export function PilotForm({
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-muted-foreground">Personal Info</h3>
         <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="photo">Photo</Label>
+            <div className="flex items-center gap-3">
+              {currentPhotoUrl && (
+                <PilotAvatar
+                  fullName={defaultValues?.full_name ?? ""}
+                  photoUrl={currentPhotoUrl}
+                  className="h-12 w-12"
+                />
+              )}
+              <Input
+                id="photo"
+                name="photo"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="max-w-xs"
+              />
+            </div>
+            {currentPhotoUrl && (
+              <p className="text-xs text-muted-foreground">
+                Choose a new file to replace the current photo, or leave blank to keep it.
+              </p>
+            )}
+          </div>
           <div className="space-y-2">
             <Label htmlFor="full_name">Full name</Label>
             <Input id="full_name" name="full_name" defaultValue={defaultValues?.full_name} required />
