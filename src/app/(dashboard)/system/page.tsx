@@ -4,12 +4,14 @@ import { NewAccountForm } from "@/components/system/new-account-form";
 import { AccountsList } from "@/components/system/accounts-list";
 import { AuditLogTable } from "@/components/system/audit-log-table";
 import { getAccounts, getAuditLog, getRoles } from "@/lib/system/queries";
+import { getCurrentProfile } from "@/lib/auth/get-profile";
 
 export default async function SystemManagementPage() {
-  const [accounts, roles, auditLog] = await Promise.all([
+  const [accounts, roles, auditLog, currentProfile] = await Promise.all([
     getAccounts(),
     getRoles(),
     getAuditLog(100),
+    getCurrentProfile(),
   ]);
 
   return (
@@ -45,7 +47,7 @@ export default async function SystemManagementPage() {
               <CardDescription>{accounts.length} account(s).</CardDescription>
             </CardHeader>
             <CardContent>
-              <AccountsList accounts={accounts} />
+              <AccountsList accounts={accounts} currentUserId={currentProfile?.id ?? ""} />
             </CardContent>
           </Card>
         </TabsContent>

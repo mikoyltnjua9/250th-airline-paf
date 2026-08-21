@@ -48,6 +48,13 @@ export async function createApeRecord(formData: FormData) {
   redirect(`/personnel/${pilotId}`);
 }
 
+export async function deleteApeRecord(pilotId: string, recordId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("ape_records").delete().eq("id", recordId);
+  if (error) throw error;
+  revalidatePath(`/personnel/${pilotId}`);
+}
+
 export async function updateApeRecord(formData: FormData) {
   const pilotId = String(formData.get("pilot_id") ?? "");
   const recordId = String(formData.get("record_id") ?? "");

@@ -45,7 +45,7 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
   const supabase = await createClient();
 
   const [pilotsRes, qualsRes, aircraftTypesRes, currencyRes, alerts] = await Promise.all([
-    supabase.from("pilots").select("id"),
+    supabase.from("pilots").select("id").eq("active", true),
     supabase.from("qualifications").select("pilot_id, status, aircraft_type_code"),
     supabase.from("aircraft_types").select("code, label").order("sort_order"),
     supabase.from("currency_items").select("pilot_id, item_type, last_date, validity_days"),
@@ -58,14 +58,18 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
   if (currencyRes.error) throw currencyRes.error;
 
   const pilots = pilotsRes.data ?? [];
+  const activePilotIds = new Set(pilots.map((p) => p.id));
   const pilotsWithAlerts = new Set(alerts.map((a) => a.pilotId));
 
   // --- qualification summary, by aircraft type -----------------------------
-  const quals = (qualsRes.data ?? []) as {
+  // Filtered to active pilots -- qualsRes/currencyRes below aren't scoped by
+  // pilot at all, so a deactivated pilot's old records would otherwise still
+  // count toward the wing-wide summary.
+  const quals = ((qualsRes.data ?? []) as {
     pilot_id: string;
     status: QualificationStatus;
     aircraft_type_code: string;
-  }[];
+  }[]).filter((q) => activePilotIds.has(q.pilot_id));
   const aircraftTypes = (aircraftTypesRes.data ?? []) as { code: string; label: string }[];
   const qualificationSummary: QualSummaryRow[] = aircraftTypes.map((type) => {
     const rowsForType = quals.filter((q) => q.aircraft_type_code === type.code);
@@ -80,12 +84,12 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
   });
 
   // --- currency summary, by requirement type -------------------------------
-  const currencyItems = (currencyRes.data ?? []) as {
+  const currencyItems = ((currencyRes.data ?? []) as {
     pilot_id: string;
     item_type: CurrencyItemType;
     last_date: string;
     validity_days: number;
-  }[];
+  }[]).filter((c) => activePilotIds.has(c.pilot_id));
   const currencyItemTypes = Object.keys(CURRENCY_ITEM_LABELS) as CurrencyItemType[];
   const currencySummary: CurrencySummaryRow[] = currencyItemTypes.map((itemType) => {
     const rowsForType = currencyItems.filter((c) => c.item_type === itemType);

@@ -51,6 +51,7 @@ export async function getAlerts(): Promise<Alert[]> {
     supabase
       .from("pilots")
       .select("id, full_name, rank_code, fit_to_fly, ranks(label)")
+      .eq("active", true)
       .order("full_name"),
     supabase
       .from("qualifications")
@@ -85,6 +86,12 @@ export async function getAlerts(): Promise<Alert[]> {
     if (!p) return "Unknown pilot";
     return `${p.ranks?.label ?? p.rank_code} ${p.full_name}`;
   };
+
+  // The pilots query above is already filtered to active pilots, but the
+  // per-record queries below (quals/currency/APE/StanEval) aren't scoped by
+  // pilot at all -- this keeps a deactivated pilot's old records from still
+  // generating alerts wing-wide.
+  const activePilotIds = new Set(pilots.map((p) => p.id));
 
   const alerts: Alert[] = [];
 
@@ -132,6 +139,7 @@ export async function getAlerts(): Promise<Alert[]> {
   }[];
 
   for (const q of quals) {
+    if (!activePilotIds.has(q.pilot_id)) continue;
     if (q.status === "expired" || q.status === "expiring_soon") {
       const label = q.aircraft_types?.label ?? q.aircraft_type_code;
       // Falls back to "today" only for the rare row with no expiry_date on
@@ -157,6 +165,7 @@ export async function getAlerts(): Promise<Alert[]> {
   }[];
 
   for (const item of currencyItems) {
+    if (!activePilotIds.has(item.pilot_id)) continue;
     const status = currencyStatus(item, EXPIRING_SOON_THRESHOLD_DAYS);
     if (status === "expired" || status === "expiring_soon") {
       const expiresAt = new Date(item.last_date);
@@ -177,6 +186,7 @@ export async function getAlerts(): Promise<Alert[]> {
     (apeRes.data ?? []) as { pilot_id: string; fit_to_fly: boolean; next_due_date: string }[],
   );
   for (const [pilotId, ape] of latestApe) {
+    if (!activePilotIds.has(pilotId)) continue;
     if (!ape.fit_to_fly) {
       pushAlert(pilotId, "ape", "", "Not fit to fly", ape.next_due_date, "expired");
       continue;
@@ -194,6 +204,7 @@ export async function getAlerts(): Promise<Alert[]> {
     (stanevalRes.data ?? []) as { pilot_id: string; next_due_date: string | null }[],
   );
   for (const [pilotId, record] of latestStaneval) {
+    if (!activePilotIds.has(pilotId)) continue;
     if (!record.next_due_date) continue;
     const daysLeft = daysUntil(record.next_due_date);
     if (daysLeft < 0) {

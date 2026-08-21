@@ -63,6 +63,7 @@ async function rosterRows(): Promise<ReportRow[]> {
   const { data, error } = await supabase
     .from("pilots")
     .select("full_name, afsn, position, rank_code, fit_to_fly, ranks(label)")
+    .eq("active", true)
     .order("full_name");
   if (error) throw error;
 
@@ -89,7 +90,7 @@ async function qualificationsRows(): Promise<ReportRow[]> {
   const { data, error } = await supabase
     .from("qualifications")
     .select(
-      "status, date_earned, expiry_date, pilots(full_name, rank_code, ranks(label)), aircraft_types(label)",
+      "status, date_earned, expiry_date, pilots(full_name, rank_code, active, ranks(label)), aircraft_types(label)",
     )
     .order("pilot_id");
   if (error) throw error;
@@ -98,11 +99,12 @@ async function qualificationsRows(): Promise<ReportRow[]> {
     status: QualificationStatus;
     date_earned: string | null;
     expiry_date: string | null;
-    pilots: { full_name: string; rank_code: string; ranks: { label: string } | null } | null;
+    pilots: { full_name: string; rank_code: string; active: boolean; ranks: { label: string } | null } | null;
     aircraft_types: { label: string } | null;
   }[];
 
   return rows
+    .filter((q) => q.pilots?.active === true)
     .map((q) => ({
       Rank: q.pilots?.ranks?.label ?? q.pilots?.rank_code ?? "—",
       "Full Name": q.pilots?.full_name ?? "Unknown pilot",
@@ -121,7 +123,7 @@ async function currencyRows(): Promise<ReportRow[]> {
   const { data, error } = await supabase
     .from("currency_items")
     .select(
-      "item_type, last_date, validity_days, pilots(full_name, rank_code, ranks(label))",
+      "item_type, last_date, validity_days, pilots(full_name, rank_code, active, ranks(label))",
     )
     .order("pilot_id");
   if (error) throw error;
@@ -130,10 +132,11 @@ async function currencyRows(): Promise<ReportRow[]> {
     item_type: CurrencyItemType;
     last_date: string;
     validity_days: number;
-    pilots: { full_name: string; rank_code: string; ranks: { label: string } | null } | null;
+    pilots: { full_name: string; rank_code: string; active: boolean; ranks: { label: string } | null } | null;
   }[];
 
   return rows
+    .filter((c) => c.pilots?.active === true)
     .map((c) => {
       const expiresAt = new Date(c.last_date);
       expiresAt.setDate(expiresAt.getDate() + c.validity_days);
@@ -157,7 +160,7 @@ async function apeRows(): Promise<ReportRow[]> {
   const { data, error } = await supabase
     .from("ape_records")
     .select(
-      "pilot_id, last_ape_date, next_due_date, fit_to_fly, classification, pilots(full_name, rank_code, ranks(label))",
+      "pilot_id, last_ape_date, next_due_date, fit_to_fly, classification, pilots(full_name, rank_code, active, ranks(label))",
     )
     .order("last_ape_date", { ascending: false });
   if (error) throw error;
@@ -168,10 +171,11 @@ async function apeRows(): Promise<ReportRow[]> {
     next_due_date: string;
     fit_to_fly: boolean;
     classification: string | null;
-    pilots: { full_name: string; rank_code: string; ranks: { label: string } | null } | null;
+    pilots: { full_name: string; rank_code: string; active: boolean; ranks: { label: string } | null } | null;
   }[];
 
   return latestPerPilot(rows)
+    .filter((a) => a.pilots?.active === true)
     .map((a) => ({
       Rank: a.pilots?.ranks?.label ?? a.pilots?.rank_code ?? "—",
       "Full Name": a.pilots?.full_name ?? "Unknown pilot",
@@ -212,6 +216,7 @@ async function flyingHoursRows(): Promise<ReportRow[]> {
     supabase
       .from("pilots")
       .select("id, full_name, rank_code, ranks(label)")
+      .eq("active", true)
       .order("full_name"),
     supabase.from("flights").select("pilot_id, flying_time_hours"),
   ]);

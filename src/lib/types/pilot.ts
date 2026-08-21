@@ -40,6 +40,7 @@ export type Pilot = {
   position: string;
   photo_url: string | null;
   fit_to_fly: boolean;
+  active: boolean;
   public_verify_token: string;
   created_at: string;
   updated_at: string;

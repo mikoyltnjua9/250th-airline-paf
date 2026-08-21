@@ -16,11 +16,15 @@ export type DirectoryRow = Pick<Pilot, "id" | "full_name" | "rank_code" | "fit_t
   ranks: { label: string } | null;
 };
 
-export async function getPilotDirectory(): Promise<DirectoryRow[]> {
+/** Defaults to active pilots only -- every wing-wide view (Directory,
+ * Dashboard, Alerts, Duty & Workload, Reports) should never surface a
+ * deactivated pilot unless explicitly asking for them. */
+export async function getPilotDirectory(status: "active" | "inactive" = "active"): Promise<DirectoryRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pilots")
     .select("id, full_name, rank_code, fit_to_fly, photo_url, ranks(label)")
+    .eq("active", status === "active")
     .order("full_name");
 
   if (error) throw error;
@@ -47,6 +51,7 @@ export async function getDutyWorkload(windowDays = 30): Promise<WorkloadRow[]> {
     supabase
       .from("pilots")
       .select("id, full_name, rank_code, ranks(label)")
+      .eq("active", true)
       .order("full_name"),
     supabase.from("flights").select("pilot_id, flying_time_hours").gte("flight_date", sinceIso),
   ]);

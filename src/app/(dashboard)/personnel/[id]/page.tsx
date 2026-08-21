@@ -20,6 +20,8 @@ import {
 import { PilotAvatar } from "@/components/pilots/pilot-avatar";
 import { VerifyQr } from "@/components/pilots/verify-qr";
 import { AlertsCard } from "@/components/dashboard/alerts-card";
+import { ConfirmActionButton } from "@/components/confirm-action-button";
+import { ReactivatePilotButton } from "@/components/pilots/reactivate-pilot-button";
 import {
   StatusBadge,
   FitToFlyBadge,
@@ -28,6 +30,13 @@ import {
 } from "@/components/status-badge";
 import { getPilotProfile } from "@/lib/pilots/queries";
 import { getAlerts } from "@/lib/alerts/queries";
+import { deactivatePilot } from "@/app/(dashboard)/personnel/actions";
+import { deleteQualification } from "@/app/(dashboard)/personnel/[id]/qualifications/actions";
+import { deleteCurrencyItem } from "@/app/(dashboard)/personnel/[id]/currency/actions";
+import { deleteApeRecord } from "@/app/(dashboard)/personnel/[id]/ape/actions";
+import { deleteFlight } from "@/app/(dashboard)/personnel/[id]/flights/actions";
+import { deleteStanevalRecord } from "@/app/(dashboard)/personnel/[id]/staneval/actions";
+import { deleteTrainingRecord } from "@/app/(dashboard)/personnel/[id]/training/actions";
 import {
   currencyStatus,
   CURRENCY_ITEM_LABELS,
@@ -82,8 +91,27 @@ export default async function PilotProfilePage({
           <Button asChild size="sm">
             <Link href={`/personnel/${id}/edit`}>Edit Pilot</Link>
           </Button>
+          {pilot.active ? (
+            <ConfirmActionButton
+              onConfirm={deactivatePilot.bind(null, id)}
+              triggerLabel="Deactivate Pilot"
+              triggerVariant="outline"
+              title="Deactivate this pilot?"
+              description="They'll be hidden from the Directory, Dashboard, Alerts, Duty & Workload, and Reports. All their records stay intact, and they can be reactivated anytime."
+              confirmLabel="Deactivate"
+            />
+          ) : (
+            <ReactivatePilotButton pilotId={id} />
+          )}
         </div>
       </div>
+
+      {!pilot.active && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          This pilot is deactivated — hidden from the Directory, Dashboard, Alerts, Duty &amp;
+          Workload, and Reports. Their records are all still here.
+        </div>
+      )}
 
       {/* Personal info */}
       <Card>
@@ -147,6 +175,13 @@ export default async function PilotProfilePage({
                       <Button asChild variant="outline" size="sm">
                         <Link href={`/personnel/${id}/qualifications/${q.id}/edit`}>Edit</Link>
                       </Button>
+                      <ConfirmActionButton
+                        onConfirm={deleteQualification.bind(null, id, q.id)}
+                        triggerLabel="Delete"
+                        title="Delete this qualification?"
+                        description="This can't be undone."
+                        confirmLabel="Delete"
+                      />
                     </div>
                   </div>
                 ))}
@@ -185,6 +220,15 @@ export default async function PilotProfilePage({
                           {item ? "Edit" : "Add"}
                         </Link>
                       </Button>
+                      {item && (
+                        <ConfirmActionButton
+                          onConfirm={deleteCurrencyItem.bind(null, id, itemType)}
+                          triggerLabel="Delete"
+                          title="Delete this currency record?"
+                          description="This can't be undone."
+                          confirmLabel="Delete"
+                        />
+                      )}
                     </div>
                   </div>
                 );
@@ -234,9 +278,18 @@ export default async function PilotProfilePage({
                         {formatDate(record.next_due_date)}
                       </p>
                     </div>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/personnel/${id}/ape/${record.id}/edit`}>Edit</Link>
-                    </Button>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/personnel/${id}/ape/${record.id}/edit`}>Edit</Link>
+                      </Button>
+                      <ConfirmActionButton
+                        onConfirm={deleteApeRecord.bind(null, id, record.id)}
+                        triggerLabel="Delete"
+                        title="Delete this APE record?"
+                        description="This can't be undone."
+                        confirmLabel="Delete"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -278,6 +331,15 @@ export default async function PilotProfilePage({
                       <p className="mt-1 text-muted-foreground">
                         {f.route ?? "—"} · {f.duty} · {f.flying_time_hours.toFixed(1)}h
                       </p>
+                      <div className="mt-2 flex justify-end">
+                        <ConfirmActionButton
+                          onConfirm={deleteFlight.bind(null, id, f.id)}
+                          triggerLabel="Delete"
+                          title="Delete this flight?"
+                          description="This can't be undone."
+                          confirmLabel="Delete"
+                        />
+                      </div>
                     </Link>
                   ))}
                 </div>
@@ -310,9 +372,18 @@ export default async function PilotProfilePage({
                             {f.flying_time_hours.toFixed(1)}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button asChild variant="outline" size="sm">
-                              <Link href={`/personnel/${id}/flights/${f.id}/edit`}>Edit</Link>
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              <Button asChild variant="outline" size="sm">
+                                <Link href={`/personnel/${id}/flights/${f.id}/edit`}>Edit</Link>
+                              </Button>
+                              <ConfirmActionButton
+                                onConfirm={deleteFlight.bind(null, id, f.id)}
+                                triggerLabel="Delete"
+                                title="Delete this flight?"
+                                description="This can't be undone."
+                                confirmLabel="Delete"
+                              />
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -358,9 +429,18 @@ export default async function PilotProfilePage({
                         : ""}
                     </p>
                   </div>
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/personnel/${id}/staneval/${record.id}/edit`}>Edit</Link>
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/personnel/${id}/staneval/${record.id}/edit`}>Edit</Link>
+                    </Button>
+                    <ConfirmActionButton
+                      onConfirm={deleteStanevalRecord.bind(null, id, record.id)}
+                      triggerLabel="Delete"
+                      title="Delete this StanEval record?"
+                      description="This can't be undone."
+                      confirmLabel="Delete"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -398,9 +478,18 @@ export default async function PilotProfilePage({
                       {formatDate(record.training_date)}
                     </p>
                   </div>
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/personnel/${id}/training/${record.id}/edit`}>Edit</Link>
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/personnel/${id}/training/${record.id}/edit`}>Edit</Link>
+                    </Button>
+                    <ConfirmActionButton
+                      onConfirm={deleteTrainingRecord.bind(null, id, record.id)}
+                      triggerLabel="Delete"
+                      title="Delete this training record?"
+                      description="This can't be undone."
+                      confirmLabel="Delete"
+                    />
+                  </div>
                 </div>
               ))}
             </div>

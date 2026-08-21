@@ -147,3 +147,31 @@ export async function updatePilot(formData: FormData) {
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);
 }
+
+export async function deactivatePilot(pilotId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from("pilots")
+    .update({ active: false, updated_by: user?.id })
+    .eq("id", pilotId);
+  if (error) throw error;
+  revalidatePath("/personnel");
+  revalidatePath(`/personnel/${pilotId}`);
+}
+
+export async function reactivatePilot(pilotId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from("pilots")
+    .update({ active: true, updated_by: user?.id })
+    .eq("id", pilotId);
+  if (error) throw error;
+  revalidatePath("/personnel");
+  revalidatePath(`/personnel/${pilotId}`);
+}

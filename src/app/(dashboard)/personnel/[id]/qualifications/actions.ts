@@ -48,6 +48,13 @@ export async function createQualification(formData: FormData) {
   redirect(`/personnel/${pilotId}`);
 }
 
+export async function deleteQualification(pilotId: string, qualificationId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("qualifications").delete().eq("id", qualificationId);
+  if (error) throw error;
+  revalidatePath(`/personnel/${pilotId}`);
+}
+
 export async function updateQualification(formData: FormData) {
   const pilotId = String(formData.get("pilot_id") ?? "");
   const qualificationId = String(formData.get("qualification_id") ?? "");

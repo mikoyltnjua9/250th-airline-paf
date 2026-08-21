@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { generatePassword } from "@/lib/auth/generate-password";
 
 const createAccountSchema = z.object({
@@ -52,4 +53,23 @@ export async function createAccount(
 
   revalidatePath("/system");
   return { success: { email, password } };
+}
+
+export async function deleteAccount(userId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Belt-and-suspenders: the UI already hides this control on your own row,
+  // but never let a signed-in admin delete themselves mid-session either way.
+  if (user?.id === userId) {
+    throw new Error("You can't delete your own account while signed in.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) throw error;
+
+  revalidatePath("/system");
 }

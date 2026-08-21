@@ -49,6 +49,13 @@ export async function createFlight(formData: FormData) {
   redirect(`/personnel/${pilotId}`);
 }
 
+export async function deleteFlight(pilotId: string, flightId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("flights").delete().eq("id", flightId);
+  if (error) throw error;
+  revalidatePath(`/personnel/${pilotId}`);
+}
+
 export async function updateFlight(formData: FormData) {
   const pilotId = String(formData.get("pilot_id") ?? "");
   const flightId = String(formData.get("flight_id") ?? "");

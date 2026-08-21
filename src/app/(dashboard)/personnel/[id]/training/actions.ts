@@ -46,6 +46,13 @@ export async function createTrainingRecord(formData: FormData) {
   redirect(`/personnel/${pilotId}`);
 }
 
+export async function deleteTrainingRecord(pilotId: string, recordId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("training_records").delete().eq("id", recordId);
+  if (error) throw error;
+  revalidatePath(`/personnel/${pilotId}`);
+}
+
 export async function updateTrainingRecord(formData: FormData) {
   const pilotId = String(formData.get("pilot_id") ?? "");
   const recordId = String(formData.get("record_id") ?? "");

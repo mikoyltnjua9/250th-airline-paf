@@ -48,6 +48,13 @@ export async function createStanevalRecord(formData: FormData) {
   redirect(`/personnel/${pilotId}`);
 }
 
+export async function deleteStanevalRecord(pilotId: string, recordId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("staneval_records").delete().eq("id", recordId);
+  if (error) throw error;
+  revalidatePath(`/personnel/${pilotId}`);
+}
+
 export async function updateStanevalRecord(formData: FormData) {
   const pilotId = String(formData.get("pilot_id") ?? "");
   const recordId = String(formData.get("record_id") ?? "");

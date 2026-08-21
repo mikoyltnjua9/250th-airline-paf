@@ -74,3 +74,14 @@ export async function upsertCurrencyItem(formData: FormData) {
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);
 }
+
+export async function deleteCurrencyItem(pilotId: string, itemType: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("currency_items")
+    .delete()
+    .eq("pilot_id", pilotId)
+    .eq("item_type", itemType);
+  if (error) throw error;
+  revalidatePath(`/personnel/${pilotId}`);
+}
