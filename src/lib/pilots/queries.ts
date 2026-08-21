@@ -12,7 +12,10 @@ import type {
   AircraftType,
 } from "@/lib/types/pilot";
 
-export type DirectoryRow = Pick<Pilot, "id" | "full_name" | "rank_code" | "fit_to_fly" | "photo_url"> & {
+export type DirectoryRow = Pick<
+  Pilot,
+  "id" | "full_name" | "rank_code" | "afsn" | "fit_to_fly" | "photo_url"
+> & {
   ranks: { label: string } | null;
 };
 
@@ -23,7 +26,7 @@ export async function getPilotDirectory(status: "active" | "inactive" = "active"
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pilots")
-    .select("id, full_name, rank_code, fit_to_fly, photo_url, ranks(label)")
+    .select("id, full_name, rank_code, afsn, fit_to_fly, photo_url, ranks(label)")
     .eq("active", status === "active")
     .order("full_name");
 
