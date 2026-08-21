@@ -21,7 +21,7 @@ import type { Alert, AlertCategory, Acknowledgement } from "@/lib/alerts/queries
 import { acknowledgeAlert, unacknowledgeAlert } from "@/app/(dashboard)/alerts/actions";
 
 const CATEGORY_LABELS: Record<AlertCategory, string> = {
-  license: "License",
+  fitness: "Fitness",
   qualification: "Qualification",
   currency: "Currency",
   ape: "APE",

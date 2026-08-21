@@ -5,7 +5,6 @@ import {
   currencyStatus,
   CURRENCY_ITEM_LABELS,
   type CurrencyItemType,
-  type LicenseStatus,
   type QualificationStatus,
 } from "@/lib/types/pilot";
 
@@ -37,13 +36,6 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1).replaceAll("_", " ");
 }
 
-const LICENSE_STATUS_LABELS: Record<LicenseStatus, string> = {
-  valid: "Valid",
-  expired: "Expired",
-  revoked: "Revoked",
-  suspended: "Suspended",
-};
-
 const QUAL_STATUS_LABELS: Record<QualificationStatus, string> = {
   current: "Current",
   expiring_soon: "Expiring Soon",
@@ -70,9 +62,7 @@ async function rosterRows(): Promise<ReportRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pilots")
-    .select(
-      "full_name, afsn, position, rank_code, ranks(label), licenses(license_no, status, date_expires)",
-    )
+    .select("full_name, afsn, position, rank_code, fit_to_fly, ranks(label)")
     .order("full_name");
   if (error) throw error;
 
@@ -81,20 +71,15 @@ async function rosterRows(): Promise<ReportRow[]> {
     afsn: string;
     position: string;
     rank_code: string;
+    fit_to_fly: boolean;
     ranks: { label: string } | null;
-    licenses: { license_no: string; status: LicenseStatus; date_expires: string }[];
-  }[]).map((p) => {
-    const license = p.licenses?.[0];
-    return {
-      Rank: p.ranks?.label ?? p.rank_code,
-      "Full Name": p.full_name,
-      AFSN: p.afsn,
-      Position: p.position,
-      "License No.": license?.license_no ?? "—",
-      "License Status": license ? LICENSE_STATUS_LABELS[license.status] : "No license on file",
-      "License Expires": license ? formatDate(license.date_expires) : "—",
-    };
-  });
+  }[]).map((p) => ({
+    Rank: p.ranks?.label ?? p.rank_code,
+    "Full Name": p.full_name,
+    AFSN: p.afsn,
+    Position: p.position,
+    "Fit to Fly": p.fit_to_fly ? "Yes" : "No",
+  }));
 }
 
 // --- Qualifications -----------------------------------------------------
@@ -201,7 +186,7 @@ async function apeRows(): Promise<ReportRow[]> {
 // --- Active Safety Alerts ---------------------------------------------------
 
 const ALERT_CATEGORY_LABELS: Record<string, string> = {
-  license: "License",
+  fitness: "Fitness",
   qualification: "Qualification",
   currency: "Currency",
   ape: "APE",
@@ -261,15 +246,13 @@ export const REPORTS: ReportDefinition[] = [
   {
     slug: "roster",
     title: "Personnel Roster",
-    description: "Every pilot on record with rank and current license status.",
+    description: "Every pilot on record with rank, position, and fitness status.",
     columns: [
       { key: "Rank", header: "Rank" },
       { key: "Full Name", header: "Full Name" },
       { key: "AFSN", header: "AFSN" },
       { key: "Position", header: "Position" },
-      { key: "License No.", header: "License No." },
-      { key: "License Status", header: "License Status" },
-      { key: "License Expires", header: "License Expires" },
+      { key: "Fit to Fly", header: "Fit to Fly" },
     ],
     getRows: rosterRows,
   },
@@ -318,7 +301,7 @@ export const REPORTS: ReportDefinition[] = [
   {
     slug: "alerts",
     title: "Active Safety Alerts",
-    description: "Everything expired or expiring soon, right now, across licenses, quals, currency, APE, and StanEval.",
+    description: "Everything expired or expiring soon, right now, across fitness, quals, currency, APE, and StanEval.",
     columns: [
       { key: "Pilot", header: "Pilot" },
       { key: "Category", header: "Category" },

@@ -10,10 +10,7 @@ export type PilotFormDefaults = Partial<{
   rank_code: string;
   afsn: string;
   position: string;
-  license_no: string;
-  date_issued: string;
-  date_expires: string;
-  status: string;
+  fit_to_fly: string;
 }>;
 
 export function PilotForm({
@@ -84,44 +81,17 @@ export function PilotForm({
               ))}
             </NativeSelect>
           </div>
-        </div>
-      </div>
-
-      <div className="space-y-4 border-t pt-6">
-        <h3 className="text-sm font-semibold text-muted-foreground">License</h3>
-        <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="license_no">License number</Label>
-            <Input id="license_no" name="license_no" defaultValue={defaultValues?.license_no} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <NativeSelect id="status" name="status" defaultValue={defaultValues?.status ?? "valid"} required>
-              <option value="valid">Valid</option>
-              <option value="expired">Expired</option>
-              <option value="revoked">Revoked</option>
-              <option value="suspended">Suspended</option>
+            <Label htmlFor="fit_to_fly">Fitness</Label>
+            <NativeSelect
+              id="fit_to_fly"
+              name="fit_to_fly"
+              defaultValue={defaultValues?.fit_to_fly ?? "true"}
+              required
+            >
+              <option value="true">Fit to Fly</option>
+              <option value="false">Unfit to Fly</option>
             </NativeSelect>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="date_issued">Date issued</Label>
-            <Input
-              id="date_issued"
-              name="date_issued"
-              type="date"
-              defaultValue={defaultValues?.date_issued}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="date_expires">Date expires</Label>
-            <Input
-              id="date_expires"
-              name="date_expires"
-              type="date"
-              defaultValue={defaultValues?.date_expires}
-              required
-            />
           </div>
         </div>
       </div>

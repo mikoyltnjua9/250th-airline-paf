@@ -22,7 +22,7 @@ import { VerifyQr } from "@/components/pilots/verify-qr";
 import { AlertsCard } from "@/components/dashboard/alerts-card";
 import {
   StatusBadge,
-  LicenseStatusBadge,
+  FitToFlyBadge,
   StanevalStatusBadge,
   TrainingStatusBadge,
 } from "@/components/status-badge";
@@ -60,7 +60,6 @@ export default async function PilotProfilePage({
   const {
     pilot,
     rankLabel,
-    license,
     qualifications,
     flights,
     flightTotals,
@@ -78,7 +77,7 @@ export default async function PilotProfilePage({
         </Button>
         <div className="flex gap-2">
           <Button asChild variant="outline" size="sm">
-            <Link href={`/personnel/${id}/license/print`}>Print License</Link>
+            <Link href={`/personnel/${id}/verify/print`}>Print ID Card</Link>
           </Button>
           <Button asChild size="sm">
             <Link href={`/personnel/${id}/edit`}>Edit Pilot</Link>
@@ -86,7 +85,7 @@ export default async function PilotProfilePage({
         </div>
       </div>
 
-      {/* Personal info + license */}
+      {/* Personal info */}
       <Card>
         <CardContent className="flex flex-col gap-6 sm:flex-row sm:items-start">
           <PilotAvatar fullName={pilot.full_name} className="h-20 w-20 text-2xl" />
@@ -97,31 +96,15 @@ export default async function PilotProfilePage({
               </h1>
               <p className="text-muted-foreground">{pilot.position}</p>
             </div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
+            <div className="flex flex-wrap items-center gap-6 text-sm">
               <div>
                 <p className="text-xs text-muted-foreground">AFSN</p>
                 <p className="font-medium">{pilot.afsn}</p>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">License No.</p>
-                <p className="font-medium">{license?.license_no ?? "—"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Date Issued</p>
-                <p className="font-medium">{formatDate(license?.date_issued ?? null)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Date Expires</p>
-                <p className="font-medium">{formatDate(license?.date_expires ?? null)}</p>
-              </div>
+              <FitToFlyBadge fitToFly={pilot.fit_to_fly} />
             </div>
-            {license && (
-              <div>
-                <LicenseStatusBadge status={license.status} />
-              </div>
-            )}
           </div>
-          {license && <VerifyQr token={license.public_verify_token} />}
+          <VerifyQr token={pilot.public_verify_token} />
         </CardContent>
       </Card>
 

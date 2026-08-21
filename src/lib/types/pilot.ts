@@ -4,7 +4,6 @@
 // token, not just the project keys), replace this with generated types via
 // `supabase gen types typescript`.
 
-export type LicenseStatus = "valid" | "expired" | "revoked" | "suspended";
 export type QualificationStatus = "current" | "expiring_soon" | "expired" | "in_training";
 export type FlightDuty = "PIC" | "SIC" | "IP" | "Student";
 export type CurrencyItemType = "last_flight" | "ifr" | "night_proficiency" | "peculiar_runways";
@@ -40,18 +39,10 @@ export type Pilot = {
   afsn: string;
   position: string;
   photo_url: string | null;
+  fit_to_fly: boolean;
+  public_verify_token: string;
   created_at: string;
   updated_at: string;
-};
-
-export type License = {
-  id: string;
-  pilot_id: string;
-  license_no: string;
-  date_issued: string;
-  date_expires: string;
-  status: LicenseStatus;
-  public_verify_token: string;
 };
 
 export type Qualification = {

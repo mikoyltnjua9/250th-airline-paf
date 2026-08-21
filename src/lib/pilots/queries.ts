@@ -2,7 +2,6 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type {
   Pilot,
-  License,
   Qualification,
   Flight,
   ApeRecord,
@@ -13,16 +12,15 @@ import type {
   AircraftType,
 } from "@/lib/types/pilot";
 
-export type DirectoryRow = Pick<Pilot, "id" | "full_name" | "rank_code"> & {
+export type DirectoryRow = Pick<Pilot, "id" | "full_name" | "rank_code" | "fit_to_fly"> & {
   ranks: { label: string } | null;
-  licenses: { status: License["status"] }[];
 };
 
 export async function getPilotDirectory(): Promise<DirectoryRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pilots")
-    .select("id, full_name, rank_code, ranks(label), licenses(status)")
+    .select("id, full_name, rank_code, fit_to_fly, ranks(label)")
     .order("full_name");
 
   if (error) throw error;
@@ -84,7 +82,6 @@ export async function getDutyWorkload(windowDays = 30): Promise<WorkloadRow[]> {
 export type PilotProfile = {
   pilot: Pilot;
   rankLabel: string;
-  license: License | null;
   qualifications: (Qualification & { aircraft_types: { label: string } | null })[];
   flights: (Flight & { aircraft_types: { label: string } | null })[];
   flightTotals: { flyingHours: number; blockHours: number; flightCount: number };
@@ -100,7 +97,6 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
   const [
     pilotRes,
     rankRes,
-    licenseRes,
     qualsRes,
     flightsRes,
     allFlightHoursRes,
@@ -111,12 +107,6 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
   ] = await Promise.all([
     supabase.from("pilots").select("*").eq("id", id).maybeSingle(),
     supabase.from("pilots").select("rank_code, ranks(label)").eq("id", id).maybeSingle(),
-    supabase
-      .from("licenses")
-      .select("*")
-      .eq("pilot_id", id)
-      .order("date_issued", { ascending: false })
-      .limit(1),
     supabase
       .from("qualifications")
       .select("*, aircraft_types(label)")
@@ -166,7 +156,6 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
   return {
     pilot: pilotRes.data as Pilot,
     rankLabel,
-    license: (licenseRes.data?.[0] as License | undefined) ?? null,
     qualifications: (qualsRes.data ?? []) as unknown as PilotProfile["qualifications"],
     flights: (flightsRes.data ?? []) as unknown as PilotProfile["flights"],
     flightTotals,

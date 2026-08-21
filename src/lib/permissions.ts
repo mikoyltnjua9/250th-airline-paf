@@ -16,8 +16,8 @@ export const ROLE_LABELS: Record<RoleCode, string> = {
 export type Permission =
   | "pilots:view"
   | "pilots:manage"
-  | "licenses:view"
-  | "licenses:manage"
+  | "fitness:view"
+  | "fitness:manage"
   | "qualifications:view"
   | "qualifications:manage"
   | "flights:view"

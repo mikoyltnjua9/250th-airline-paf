@@ -55,7 +55,7 @@ export default async function SystemManagementPage() {
             <CardHeader>
               <CardTitle>Audit Log</CardTitle>
               <CardDescription>
-                Every change to a safety-critical field (licenses, qualifications, APE,
+                Every change to a safety-critical field (pilot fitness, qualifications, APE,
                 StanEval), most recent first. Showing up to 100 entries.
               </CardDescription>
             </CardHeader>

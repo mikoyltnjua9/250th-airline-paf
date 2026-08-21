@@ -32,7 +32,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Personnel Directory", href: "/personnel", icon: Users },
-  { label: "License Verification", href: "/licenses", icon: ScanLine, disabled: true },
+  { label: "Personnel Verification", href: "/licenses", icon: ScanLine, disabled: true },
   { label: "Qualifications", href: "/qualifications", icon: GraduationCap, disabled: true },
   { label: "Flying Hours & History", href: "/flying-hours", icon: PlaneTakeoff, disabled: true },
   { label: "Duty & Workload", href: "/duty-workload", icon: Gauge },

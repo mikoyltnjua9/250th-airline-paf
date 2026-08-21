@@ -10,8 +10,9 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
  *
  * Legitimate uses in this app:
  *  - super_admin creating new accounts (Supabase Auth Admin API)
- *  - the public "Scan to Verify" license endpoint, which intentionally
- *    reads across RLS but returns only an explicit, minimal field allow-list
+ *  - the public "Scan to Verify" pilot verification endpoint, which
+ *    intentionally reads across RLS but returns only an explicit, minimal
+ *    field allow-list
  */
 export function createAdminClient() {
   return createSupabaseClient(

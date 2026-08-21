@@ -6,10 +6,10 @@ function verifyUrl(token: string) {
 }
 
 /**
- * The "Scan to Verify" QR for a pilot's digital license — links to the
- * public, no-login verify page. Server-rendered: the SVG comes from the
- * `qrcode` package encoding a URL we built ourselves (not user input), so
- * injecting it is safe.
+ * The "Scan to Verify" QR for a pilot's own permanent verification token —
+ * links to the public, no-login verify page. Server-rendered: the SVG comes
+ * from the `qrcode` package encoding a URL we built ourselves (not user
+ * input), so injecting it is safe.
  */
 export async function VerifyQr({ token }: { token: string }) {
   const url = verifyUrl(token);

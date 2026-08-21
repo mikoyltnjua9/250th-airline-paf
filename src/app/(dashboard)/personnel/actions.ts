@@ -12,15 +12,11 @@ const pilotFormSchema = z.object({
   rank_code: z.string().trim().min(1, "Rank is required"),
   afsn: z.string().trim().min(1, "AFSN is required"),
   position: z.enum(POSITIONS),
-  license_no: z.string().trim().min(1, "License number is required"),
-  date_issued: z.string().trim().min(1, "Date issued is required"),
-  date_expires: z.string().trim().min(1, "Date expires is required"),
-  status: z.enum(["valid", "expired", "revoked", "suspended"]),
+  fit_to_fly: z.enum(["true", "false"]).transform((v) => v === "true"),
 });
 
 function friendlyDbError(message: string): string {
   if (message.includes("afsn")) return "That AFSN is already in use by another pilot.";
-  if (message.includes("license_no")) return "That license number is already in use.";
   return message;
 }
 
@@ -34,7 +30,6 @@ export async function createPilot(formData: FormData) {
     );
   }
 
-  const { license_no, date_issued, date_expires, status, ...pilotFields } = parsed.data;
   const supabase = await createClient();
   const {
     data: { user },
@@ -43,7 +38,7 @@ export async function createPilot(formData: FormData) {
   const { data: pilot, error: pilotError } = await supabase
     .from("pilots")
     .insert({
-      ...pilotFields,
+      ...parsed.data,
       created_by: user?.id,
       updated_by: user?.id,
     })
@@ -54,29 +49,12 @@ export async function createPilot(formData: FormData) {
     redirectWithFormError("/personnel/new", friendlyDbError(pilotError.message), formData);
   }
 
-  const { error: licenseError } = await supabase.from("licenses").insert({
-    pilot_id: pilot.id,
-    license_no,
-    date_issued,
-    date_expires,
-    status,
-    created_by: user?.id,
-    updated_by: user?.id,
-  });
-
-  if (licenseError) {
-    // Compensate: don't leave a pilot record with no license behind.
-    await supabase.from("pilots").delete().eq("id", pilot.id);
-    redirectWithFormError("/personnel/new", friendlyDbError(licenseError.message), formData);
-  }
-
   revalidatePath("/personnel");
   redirect(`/personnel/${pilot.id}`);
 }
 
 export async function updatePilot(formData: FormData) {
   const pilotId = String(formData.get("pilot_id") ?? "");
-  const licenseId = String(formData.get("license_id") ?? "");
 
   const parsed = pilotFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -87,7 +65,6 @@ export async function updatePilot(formData: FormData) {
     );
   }
 
-  const { license_no, date_issued, date_expires, status, ...pilotFields } = parsed.data;
   const supabase = await createClient();
   const {
     data: { user },
@@ -95,20 +72,11 @@ export async function updatePilot(formData: FormData) {
 
   const { error: pilotError } = await supabase
     .from("pilots")
-    .update({ ...pilotFields, updated_by: user?.id })
+    .update({ ...parsed.data, updated_by: user?.id })
     .eq("id", pilotId);
 
   if (pilotError) {
     redirectWithFormError(`/personnel/${pilotId}/edit`, friendlyDbError(pilotError.message), formData);
-  }
-
-  const { error: licenseError } = await supabase
-    .from("licenses")
-    .update({ license_no, date_issued, date_expires, status, updated_by: user?.id })
-    .eq("id", licenseId);
-
-  if (licenseError) {
-    redirectWithFormError(`/personnel/${pilotId}/edit`, friendlyDbError(licenseError.message), formData);
   }
 
   revalidatePath("/personnel");

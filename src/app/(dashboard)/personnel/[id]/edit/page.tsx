@@ -21,7 +21,7 @@ export default async function EditPilotPage({
 
   if (!profile) notFound();
 
-  const { pilot, license } = profile;
+  const { pilot } = profile;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -42,20 +42,14 @@ export default async function EditPilotPage({
             action={updatePilot}
             submitLabel="Save changes"
             error={error}
-            hiddenFields={{
-              pilot_id: pilot.id,
-              license_id: license?.id ?? "",
-            }}
+            hiddenFields={{ pilot_id: pilot.id }}
             defaultValues={
               preserved ?? {
                 full_name: pilot.full_name,
                 rank_code: pilot.rank_code,
                 afsn: pilot.afsn,
                 position: pilot.position,
-                license_no: license?.license_no ?? "",
-                date_issued: license?.date_issued ?? "",
-                date_expires: license?.date_expires ?? "",
-                status: license?.status ?? "valid",
+                fit_to_fly: String(pilot.fit_to_fly),
               }
             }
           />

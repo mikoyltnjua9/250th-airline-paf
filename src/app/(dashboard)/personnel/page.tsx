@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PilotAvatar } from "@/components/pilots/pilot-avatar";
-import { LicenseStatusBadge } from "@/components/status-badge";
+import { FitToFlyBadge } from "@/components/status-badge";
 import { getPilotDirectory } from "@/lib/pilots/queries";
 
 export default async function PersonnelPage() {
@@ -25,24 +25,21 @@ export default async function PersonnelPage() {
             No pilots yet. Add the first one to get started.
           </p>
         ) : (
-          pilots.map((pilot) => {
-            const licenseStatus = pilot.licenses[0]?.status;
-            return (
-              <Link
-                key={pilot.id}
-                href={`/personnel/${pilot.id}`}
-                className="flex items-center gap-4 p-4 transition-colors hover:bg-muted/50"
-              >
-                <PilotAvatar fullName={pilot.full_name} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">
-                    {pilot.ranks?.label ?? pilot.rank_code} {pilot.full_name}
-                  </p>
-                </div>
-                {licenseStatus && <LicenseStatusBadge status={licenseStatus} />}
-              </Link>
-            );
-          })
+          pilots.map((pilot) => (
+            <Link
+              key={pilot.id}
+              href={`/personnel/${pilot.id}`}
+              className="flex items-center gap-4 p-4 transition-colors hover:bg-muted/50"
+            >
+              <PilotAvatar fullName={pilot.full_name} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">
+                  {pilot.ranks?.label ?? pilot.rank_code} {pilot.full_name}
+                </p>
+              </div>
+              <FitToFlyBadge fitToFly={pilot.fit_to_fly} />
+            </Link>
+          ))
         )}
       </div>
     </div>

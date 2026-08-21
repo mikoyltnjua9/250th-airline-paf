@@ -21,7 +21,7 @@ import {
 } from "@/lib/dashboard/queries";
 
 const CATEGORY_LABELS: Record<DashboardAlertCategory, string> = {
-  license: "License",
+  fitness: "Fitness",
   qualification: "Qualification",
   currency: "Currency",
   ape: "APE",

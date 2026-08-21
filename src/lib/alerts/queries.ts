@@ -5,12 +5,11 @@ import {
   CURRENCY_ITEM_LABELS,
   type CurrencyItemType,
   type QualificationStatus,
-  type LicenseStatus,
 } from "@/lib/types/pilot";
 
 export const EXPIRING_SOON_THRESHOLD_DAYS = 30;
 
-export type AlertCategory = "license" | "qualification" | "currency" | "ape" | "staneval";
+export type AlertCategory = "fitness" | "qualification" | "currency" | "ape" | "staneval";
 export type AlertSeverity = "expired" | "expiring_soon";
 
 export type Alert = {
@@ -48,9 +47,11 @@ function latestPerPilot<T extends { pilot_id: string }>(rows: T[]): Map<string, 
 export async function getAlerts(): Promise<Alert[]> {
   const supabase = await createClient();
 
-  const [pilotsRes, licensesRes, qualsRes, currencyRes, apeRes, stanevalRes] = await Promise.all([
-    supabase.from("pilots").select("id, full_name, rank_code, ranks(label)").order("full_name"),
-    supabase.from("licenses").select("pilot_id, status, date_expires"),
+  const [pilotsRes, qualsRes, currencyRes, apeRes, stanevalRes] = await Promise.all([
+    supabase
+      .from("pilots")
+      .select("id, full_name, rank_code, fit_to_fly, ranks(label)")
+      .order("full_name"),
     supabase
       .from("qualifications")
       .select("pilot_id, status, aircraft_type_code, expiry_date, aircraft_types(label)"),
@@ -66,7 +67,6 @@ export async function getAlerts(): Promise<Alert[]> {
   ]);
 
   if (pilotsRes.error) throw pilotsRes.error;
-  if (licensesRes.error) throw licensesRes.error;
   if (qualsRes.error) throw qualsRes.error;
   if (currencyRes.error) throw currencyRes.error;
   if (apeRes.error) throw apeRes.error;
@@ -76,6 +76,7 @@ export async function getAlerts(): Promise<Alert[]> {
     id: string;
     full_name: string;
     rank_code: string;
+    fit_to_fly: boolean;
     ranks: { label: string } | null;
   }[];
 
@@ -93,7 +94,7 @@ export async function getAlerts(): Promise<Alert[]> {
     /** Disambiguates alerts of the same category for the same pilot (e.g.
      * which aircraft type, which currency requirement). Empty string for
      * categories where a pilot only ever has one active alert of that kind
-     * (license, APE, StanEval). */
+     * (fitness, APE, StanEval). */
     subKey: string,
     detail: string,
     dueDate: string,
@@ -110,28 +111,14 @@ export async function getAlerts(): Promise<Alert[]> {
     });
   }
 
-  // --- licenses -------------------------------------------------------
-  for (const lic of (licensesRes.data ?? []) as {
-    pilot_id: string;
-    status: LicenseStatus;
-    date_expires: string;
-  }[]) {
-    if (lic.status === "revoked" || lic.status === "suspended") {
-      pushAlert(lic.pilot_id, "license", "", `License ${lic.status}`, lic.date_expires, "expired");
-      continue;
-    }
-    const daysLeft = daysUntil(lic.date_expires);
-    if (daysLeft < 0) {
-      pushAlert(lic.pilot_id, "license", "", "License expired", lic.date_expires, "expired");
-    } else if (daysLeft <= EXPIRING_SOON_THRESHOLD_DAYS) {
-      pushAlert(
-        lic.pilot_id,
-        "license",
-        "",
-        "License expiring soon",
-        lic.date_expires,
-        "expiring_soon",
-      );
+  // --- fitness (fit to fly) -------------------------------------------------
+  // No date involved -- this is a persistent flag, not a countdown, so it's
+  // always "expired" severity (matches how the APE module treats "not fit
+  // to fly") and sorts by today's date since there's no better one to use.
+  const today = new Date().toISOString().slice(0, 10);
+  for (const p of pilots) {
+    if (!p.fit_to_fly) {
+      pushAlert(p.id, "fitness", "", "Marked unfit to fly", today, "expired");
     }
   }
 
