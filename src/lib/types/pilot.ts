@@ -62,7 +62,6 @@ export type Flight = {
   route: string | null;
   duty: FlightDuty;
   flying_time_hours: number;
-  block_time_hours: number | null;
 };
 
 export type ApeRecord = {

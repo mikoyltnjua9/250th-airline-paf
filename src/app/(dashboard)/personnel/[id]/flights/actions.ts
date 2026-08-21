@@ -12,7 +12,6 @@ const flightFormSchema = z.object({
   route: z.string().trim().optional(),
   duty: z.enum(["PIC", "SIC", "IP", "Student"]),
   flying_time_hours: z.coerce.number().positive("Flying time must be a positive number"),
-  block_time_hours: z.coerce.number().positive().optional().or(z.literal("").transform(() => undefined)),
 });
 
 export async function createFlight(formData: FormData) {
@@ -39,7 +38,6 @@ export async function createFlight(formData: FormData) {
     route: parsed.data.route || null,
     duty: parsed.data.duty,
     flying_time_hours: parsed.data.flying_time_hours,
-    block_time_hours: parsed.data.block_time_hours ?? null,
     created_by: user?.id,
   });
 
@@ -74,7 +72,6 @@ export async function updateFlight(formData: FormData) {
       route: parsed.data.route || null,
       duty: parsed.data.duty,
       flying_time_hours: parsed.data.flying_time_hours,
-      block_time_hours: parsed.data.block_time_hours ?? null,
     })
     .eq("id", flightId);
 

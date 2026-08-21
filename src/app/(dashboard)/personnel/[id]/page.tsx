@@ -247,8 +247,8 @@ export default async function PilotProfilePage({
               <CardTitle>Flying Hours &amp; History</CardTitle>
               <CardDescription>
                 {flightTotals.flightCount} flight{flightTotals.flightCount === 1 ? "" : "s"} on
-                record · {flightTotals.flyingHours.toFixed(1)}h flying ·{" "}
-                {flightTotals.blockHours.toFixed(1)}h block, all-time. Showing 10 most recent.
+                record · {flightTotals.flyingHours.toFixed(1)}h flying, all-time. Showing 10 most
+                recent.
               </CardDescription>
             </div>
             <Button asChild size="sm">

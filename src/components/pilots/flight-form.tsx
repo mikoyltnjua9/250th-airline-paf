@@ -11,7 +11,6 @@ export type FlightFormDefaults = Partial<{
   route: string;
   duty: string;
   flying_time_hours: string;
-  block_time_hours: string;
 }>;
 
 export function FlightForm({
@@ -100,17 +99,6 @@ export function FlightForm({
             step={0.1}
             defaultValue={defaultValues?.flying_time_hours}
             required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="block_time_hours">Block time (hours)</Label>
-          <Input
-            id="block_time_hours"
-            name="block_time_hours"
-            type="number"
-            min={0.1}
-            step={0.1}
-            defaultValue={defaultValues?.block_time_hours}
           />
         </div>
       </div>

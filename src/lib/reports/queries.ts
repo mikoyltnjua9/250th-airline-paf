@@ -213,28 +213,26 @@ async function flyingHoursRows(): Promise<ReportRow[]> {
       .from("pilots")
       .select("id, full_name, rank_code, ranks(label)")
       .order("full_name"),
-    supabase.from("flights").select("pilot_id, flying_time_hours, block_time_hours"),
+    supabase.from("flights").select("pilot_id, flying_time_hours"),
   ]);
   if (pilotsRes.error) throw pilotsRes.error;
   if (flightsRes.error) throw flightsRes.error;
 
-  const byPilot = new Map<string, { flying: number; block: number; count: number }>();
+  const byPilot = new Map<string, { flying: number; count: number }>();
   for (const f of flightsRes.data ?? []) {
-    const entry = byPilot.get(f.pilot_id) ?? { flying: 0, block: 0, count: 0 };
+    const entry = byPilot.get(f.pilot_id) ?? { flying: 0, count: 0 };
     entry.flying += f.flying_time_hours ?? 0;
-    entry.block += f.block_time_hours ?? 0;
     entry.count += 1;
     byPilot.set(f.pilot_id, entry);
   }
 
   return (pilotsRes.data ?? []).map((p) => {
-    const agg = byPilot.get(p.id) ?? { flying: 0, block: 0, count: 0 };
+    const agg = byPilot.get(p.id) ?? { flying: 0, count: 0 };
     const rankLabel = (p as unknown as { ranks: { label: string } | null }).ranks?.label ?? p.rank_code;
     return {
       Rank: rankLabel,
       "Full Name": p.full_name,
       "All-Time Flying Hours": Number(agg.flying.toFixed(1)),
-      "All-Time Block Hours": Number(agg.block.toFixed(1)),
       "Flight Count": agg.count,
     };
   });
@@ -314,12 +312,11 @@ export const REPORTS: ReportDefinition[] = [
   {
     slug: "flying-hours",
     title: "Flying Hours Summary",
-    description: "All-time flying and block hours per pilot.",
+    description: "All-time flying hours per pilot.",
     columns: [
       { key: "Rank", header: "Rank" },
       { key: "Full Name", header: "Full Name" },
       { key: "All-Time Flying Hours", header: "All-Time Flying Hours", numeric: true },
-      { key: "All-Time Block Hours", header: "All-Time Block Hours", numeric: true },
       { key: "Flight Count", header: "Flight Count", numeric: true },
     ],
     getRows: flyingHoursRows,

@@ -54,8 +54,6 @@ export default async function EditFlightPage({
                 route: flight.route ?? "",
                 duty: flight.duty,
                 flying_time_hours: String(flight.flying_time_hours),
-                block_time_hours:
-                  flight.block_time_hours != null ? String(flight.block_time_hours) : "",
               }
             }
           />

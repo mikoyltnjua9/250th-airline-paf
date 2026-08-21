@@ -84,7 +84,7 @@ export type PilotProfile = {
   rankLabel: string;
   qualifications: (Qualification & { aircraft_types: { label: string } | null })[];
   flights: (Flight & { aircraft_types: { label: string } | null })[];
-  flightTotals: { flyingHours: number; blockHours: number; flightCount: number };
+  flightTotals: { flyingHours: number; flightCount: number };
   apeRecords: ApeRecord[];
   currencyItems: CurrencyItem[];
   stanevalRecords: StanevalRecord[];
@@ -120,7 +120,7 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
       .limit(10),
     // Separate, uncapped fetch just for totals — the list above is
     // deliberately limited to the 10 most recent entries.
-    supabase.from("flights").select("flying_time_hours, block_time_hours").eq("pilot_id", id),
+    supabase.from("flights").select("flying_time_hours").eq("pilot_id", id),
     supabase
       .from("ape_records")
       .select("*")
@@ -149,7 +149,6 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
   const allFlightHours = allFlightHoursRes.data ?? [];
   const flightTotals = {
     flyingHours: allFlightHours.reduce((sum, f) => sum + (f.flying_time_hours ?? 0), 0),
-    blockHours: allFlightHours.reduce((sum, f) => sum + (f.block_time_hours ?? 0), 0),
     flightCount: allFlightHours.length,
   };
 
