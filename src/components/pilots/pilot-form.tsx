@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { Rank } from "@/lib/types/pilot";
+import { POSITIONS, type Rank } from "@/lib/types/pilot";
 
 export type PilotFormDefaults = Partial<{
   full_name: string;
@@ -71,12 +71,18 @@ export function PilotForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="position">Position</Label>
-            <Input
+            <NativeSelect
               id="position"
               name="position"
-              defaultValue={defaultValues?.position ?? "Pilot"}
+              defaultValue={defaultValues?.position ?? "Fixed-Wing Pilot"}
               required
-            />
+            >
+              {POSITIONS.map((position) => (
+                <option key={position} value={position}>
+                  {position}
+                </option>
+              ))}
+            </NativeSelect>
           </div>
         </div>
       </div>

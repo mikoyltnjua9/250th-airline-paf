@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -82,25 +83,38 @@ function AckControl({ row }: { row: Row }) {
 }
 
 export function AlertsTable({ rows }: { rows: Row[] }) {
+  const [tab, setTab] = useState<"all" | "unacknowledged" | "acknowledged">("all");
   const [category, setCategory] = useState<AlertCategory | "all">("all");
   const [severity, setSeverity] = useState<"all" | "expired" | "expiring_soon">("all");
-  const [unacknowledgedOnly, setUnacknowledgedOnly] = useState(false);
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter(({ alert, acknowledgement }) => {
+      if (tab === "unacknowledged" && acknowledgement) return false;
+      if (tab === "acknowledged" && !acknowledgement) return false;
       if (category !== "all" && alert.category !== category) return false;
       if (severity !== "all" && alert.status !== severity) return false;
-      if (unacknowledgedOnly && acknowledgement) return false;
       if (q && !alert.pilotName.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [rows, category, severity, unacknowledgedOnly, search]);
+  }, [rows, tab, category, severity, search]);
+
+  const acknowledgedCount = rows.filter((r) => r.acknowledgement).length;
 
   return (
     <Card>
       <CardContent className="space-y-4">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+          <TabsList>
+            <TabsTrigger value="all">All Alerts ({rows.length})</TabsTrigger>
+            <TabsTrigger value="unacknowledged">
+              Unacknowledged ({rows.length - acknowledgedCount})
+            </TabsTrigger>
+            <TabsTrigger value="acknowledged">Acknowledged ({acknowledgedCount})</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         <div className="flex flex-wrap items-center gap-2">
           <Input
             placeholder="Search pilot…"
@@ -134,14 +148,6 @@ export function AlertsTable({ rows }: { rows: Row[] }) {
               <SelectItem value="expiring_soon">Expiring Soon</SelectItem>
             </SelectContent>
           </Select>
-          <Button
-            type="button"
-            variant={unacknowledgedOnly ? "default" : "outline"}
-            size="sm"
-            onClick={() => setUnacknowledgedOnly((v) => !v)}
-          >
-            Unacknowledged only
-          </Button>
           <span className="ml-auto text-xs text-muted-foreground">
             {filtered.length} of {rows.length}
           </span>

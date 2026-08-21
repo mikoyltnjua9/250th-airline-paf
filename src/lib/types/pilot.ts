@@ -11,6 +11,16 @@ export type CurrencyItemType = "last_flight" | "ifr" | "night_proficiency" | "pe
 export type TrainingStatus = "completed" | "scheduled" | "overdue";
 export type StanevalStatus = "pass" | "fail";
 
+// Fixed set, not a lookup table (like ranks/aircraft_types) -- personnel
+// positions don't change often enough to justify the extra table, and
+// unlike ranks there's no external numbering scheme to preserve.
+export const POSITIONS = [
+  "Fixed-Wing Pilot",
+  "Rotary Pilot",
+  "Ground Crew",
+  "Maintenance Officer",
+] as const;
+
 export type Rank = {
   code: string;
   label: string;

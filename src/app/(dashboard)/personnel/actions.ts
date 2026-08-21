@@ -5,12 +5,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
+import { POSITIONS } from "@/lib/types/pilot";
 
 const pilotFormSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required"),
   rank_code: z.string().trim().min(1, "Rank is required"),
   afsn: z.string().trim().min(1, "AFSN is required"),
-  position: z.string().trim().min(1).default("Pilot"),
+  position: z.enum(POSITIONS),
   license_no: z.string().trim().min(1, "License number is required"),
   date_issued: z.string().trim().min(1, "Date issued is required"),
   date_expires: z.string().trim().min(1, "Date expires is required"),
