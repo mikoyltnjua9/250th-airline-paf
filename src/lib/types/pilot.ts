@@ -42,8 +42,28 @@ export type Pilot = {
   fit_to_fly: boolean;
   active: boolean;
   public_verify_token: string;
+  contact_phone: string | null;
+  contact_email: string | null;
   created_at: string;
   updated_at: string;
+};
+
+// Crew-role qualifications: a separate dimension from the per-aircraft-type
+// Qualifications above (Bell 412, C295, etc.) -- this tracks what duty
+// role a pilot is qualified for (Pilot in Command, Instructor, etc.),
+// regardless of aircraft. Fixed lookup like ranks/aircraft_types.
+export type CrewRole = {
+  code: string;
+  label: string;
+  sort_order: number;
+};
+
+// One row per (pilot, role) -- like CurrencyItem, not a history log.
+export type PilotCrewQualification = {
+  id: string;
+  pilot_id: string;
+  role_code: string;
+  qualified: boolean;
 };
 
 export type Qualification = {

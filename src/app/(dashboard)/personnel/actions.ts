@@ -13,6 +13,19 @@ const pilotFormSchema = z.object({
   afsn: z.string().trim().min(1, "AFSN is required"),
   position: z.enum(POSITIONS),
   fit_to_fly: z.enum(["true", "false"]).transform((v) => v === "true"),
+  contact_phone: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => v || null),
+  contact_email: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => v || null)
+    .refine((v) => v === null || z.string().email().safeParse(v).success, {
+      message: "Contact email must be a valid email address.",
+    }),
 });
 
 function friendlyDbError(message: string): string {

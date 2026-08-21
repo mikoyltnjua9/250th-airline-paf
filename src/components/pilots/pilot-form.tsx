@@ -12,6 +12,8 @@ export type PilotFormDefaults = Partial<{
   afsn: string;
   position: string;
   fit_to_fly: string;
+  contact_phone: string;
+  contact_email: string;
 }>;
 
 export function PilotForm({
@@ -131,6 +133,26 @@ export function PilotForm({
               <option value="true">Fit to Fly</option>
               <option value="false">Unfit to Fly</option>
             </NativeSelect>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="contact_phone">Contact phone</Label>
+            <Input
+              id="contact_phone"
+              name="contact_phone"
+              type="tel"
+              placeholder="Optional"
+              defaultValue={defaultValues?.contact_phone}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="contact_email">Contact email</Label>
+            <Input
+              id="contact_email"
+              name="contact_email"
+              type="email"
+              placeholder="Optional"
+              defaultValue={defaultValues?.contact_email}
+            />
           </div>
         </div>
       </div>

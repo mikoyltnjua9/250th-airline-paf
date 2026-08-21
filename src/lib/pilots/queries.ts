@@ -10,6 +10,8 @@ import type {
   TrainingRecord,
   Rank,
   AircraftType,
+  CrewRole,
+  PilotCrewQualification,
 } from "@/lib/types/pilot";
 
 export type DirectoryRow = Pick<
@@ -97,6 +99,8 @@ export type PilotProfile = {
   currencyItems: CurrencyItem[];
   stanevalRecords: StanevalRecord[];
   trainingRecords: TrainingRecord[];
+  crewRoles: CrewRole[];
+  crewQualifications: PilotCrewQualification[];
 };
 
 export async function getPilotProfile(id: string): Promise<PilotProfile | null> {
@@ -112,6 +116,8 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
     currencyRes,
     stanevalRes,
     trainingRes,
+    crewRolesRes,
+    crewQualsRes,
   ] = await Promise.all([
     supabase.from("pilots").select("*").eq("id", id).maybeSingle(),
     supabase.from("pilots").select("rank_code, ranks(label)").eq("id", id).maybeSingle(),
@@ -145,6 +151,8 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
       .select("*")
       .eq("pilot_id", id)
       .order("training_date", { ascending: false }),
+    supabase.from("crew_roles").select("*").order("sort_order"),
+    supabase.from("pilot_crew_qualifications").select("*").eq("pilot_id", id),
   ]);
 
   if (pilotRes.error) throw pilotRes.error;
@@ -170,7 +178,53 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
     currencyItems: (currencyRes.data ?? []) as CurrencyItem[],
     stanevalRecords: (stanevalRes.data ?? []) as StanevalRecord[],
     trainingRecords: (trainingRes.data ?? []) as TrainingRecord[],
+    crewRoles: (crewRolesRes.data ?? []) as CrewRole[],
+    crewQualifications: (crewQualsRes.data ?? []) as PilotCrewQualification[],
   };
+}
+
+export type DutyBand = "optimal" | "normal" | "high";
+
+export type DutyStatus = {
+  dutyDays: number;
+  cap: number;
+  band: DutyBand;
+  periodLabel: string;
+};
+
+/**
+ * "Duty days" is deliberately derived from real flight dates (distinct
+ * `flight_date`s this calendar month), not a fabricated or manually-entered
+ * figure — there is no duty-roster/clock-in-out tracking in this system.
+ * It's the closest real signal available for "was this pilot on duty."
+ * The 18-day cap and Optimal/Normal/High thirds-based bands are the
+ * client's own numbers from the September mockup, confirmed 2026-08-22 —
+ * revisit if wing ops provides different official duty-time limits.
+ */
+export async function getDutyStatus(pilotId: string): Promise<DutyStatus> {
+  const supabase = await createClient();
+
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const startIso = start.toISOString().slice(0, 10);
+  const endIso = end.toISOString().slice(0, 10);
+
+  const { data, error } = await supabase
+    .from("flights")
+    .select("flight_date")
+    .eq("pilot_id", pilotId)
+    .gte("flight_date", startIso)
+    .lte("flight_date", endIso);
+  if (error) throw error;
+
+  const dutyDays = new Set((data ?? []).map((f) => f.flight_date)).size;
+  const cap = 18;
+  const band: DutyBand = dutyDays <= 6 ? "optimal" : dutyDays <= 12 ? "normal" : "high";
+
+  const periodLabel = `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+
+  return { dutyDays, cap, band, periodLabel };
 }
 
 export async function getStanevalRecord(

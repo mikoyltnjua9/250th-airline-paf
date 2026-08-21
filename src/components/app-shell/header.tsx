@@ -4,6 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MobileNav } from "@/components/app-shell/mobile-nav";
+import { RefreshButton } from "@/components/app-shell/refresh-button";
+
+function formatLastUpdated(date: Date) {
+  return date.toLocaleString("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 function initials(name: string) {
   return name
@@ -35,6 +46,15 @@ export function Header({ fullName, roleLabel }: { fullName: string; roleLabel: s
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+        <div className="hidden flex-col items-end leading-tight md:flex">
+          <span className="text-[10px] uppercase tracking-wide text-sidebar-foreground/50">
+            Last updated
+          </span>
+          <span className="text-xs font-medium text-sidebar-foreground/80">
+            {formatLastUpdated(new Date())}
+          </span>
+        </div>
+        <RefreshButton />
         <Badge variant="secondary" className="hidden sm:inline-flex">
           {roleLabel}
         </Badge>

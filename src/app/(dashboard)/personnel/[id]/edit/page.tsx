@@ -50,6 +50,8 @@ export default async function EditPilotPage({
                 afsn: pilot.afsn,
                 position: pilot.position,
                 fit_to_fly: String(pilot.fit_to_fly),
+                contact_phone: pilot.contact_phone ?? "",
+                contact_email: pilot.contact_email ?? "",
               }
             }
             currentPhotoUrl={pilot.photo_url}
