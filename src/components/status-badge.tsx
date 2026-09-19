@@ -36,6 +36,7 @@ export function StatusBadge({ status }: { status: QualificationStatus }) {
 const FITNESS_REASON_SUFFIX: Record<FitnessReason, string> = {
   manual: "",
   ape_expired: " · APE expired",
+  ape_not_fit: " · APE: not fit",
   no_ape: " · No APE on file",
 };
 

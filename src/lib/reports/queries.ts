@@ -70,15 +70,15 @@ async function rosterRows(): Promise<ReportRow[]> {
       .order("full_name"),
     supabase
       .from("ape_records")
-      .select("pilot_id, next_due_date")
+      .select("pilot_id, next_due_date, fit_to_fly")
       .order("last_ape_date", { ascending: false }),
   ]);
   if (error) throw error;
   if (apeRes.error) throw apeRes.error;
 
-  const latestApeDue = new Map<string, string>();
+  const latestApe = new Map<string, { next_due_date: string; fit_to_fly: boolean }>();
   for (const a of apeRes.data ?? []) {
-    if (!latestApeDue.has(a.pilot_id)) latestApeDue.set(a.pilot_id, a.next_due_date);
+    if (!latestApe.has(a.pilot_id)) latestApe.set(a.pilot_id, a);
   }
 
   return ((data ?? []) as unknown as {
@@ -94,7 +94,7 @@ async function rosterRows(): Promise<ReportRow[]> {
     "Full Name": p.full_name,
     AFSN: p.afsn,
     Position: p.position,
-    "Fit to Fly": effectiveFitness(p.fit_to_fly, latestApeDue.get(p.id)).fit ? "Yes" : "No",
+    "Fit to Fly": effectiveFitness(p.fit_to_fly, latestApe.get(p.id)).fit ? "Yes" : "No",
   }));
 }
 

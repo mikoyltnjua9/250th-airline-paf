@@ -18,7 +18,7 @@ export default async function PrintIdCardPage({
   if (!profile) notFound();
 
   const { pilot, rankLabel, apeRecords } = profile;
-  const fitness = effectiveFitness(pilot.fit_to_fly, apeRecords[0]?.next_due_date);
+  const fitness = effectiveFitness(pilot.fit_to_fly, apeRecords[0]);
 
   return (
     <div className="mx-auto max-w-xl space-y-6">

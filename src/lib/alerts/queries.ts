@@ -130,14 +130,15 @@ export async function getAlerts(): Promise<Alert[]> {
     (apeRes.data ?? []) as { pilot_id: string; fit_to_fly: boolean; next_due_date: string }[],
   );
   for (const p of pilots) {
-    const { reason } = effectiveFitness(p.fit_to_fly, latestApe.get(p.id)?.next_due_date);
+    const { reason } = effectiveFitness(p.fit_to_fly, latestApe.get(p.id));
     if (reason === "manual") {
       pushAlert(p.id, "fitness", "", "Marked unfit to fly", today, "expired");
     } else if (reason === "no_ape") {
       pushAlert(p.id, "fitness", "", "No APE on file — treated as unfit to fly", today, "expired");
     }
-    // reason === "ape_expired" is deliberately not alerted here: the APE
-    // section below already raises "APE overdue" for the same pilot.
+    // "ape_expired" and "ape_not_fit" are deliberately not alerted here: the
+    // APE section below already raises "APE overdue" / "Not fit to fly" for
+    // the same pilot.
   }
 
   // --- qualifications ---------------------------------------------------

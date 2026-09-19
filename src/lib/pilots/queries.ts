@@ -1,6 +1,11 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { aircraftCategoryForPosition, effectiveFitness, type EffectiveFitness } from "@/lib/types/pilot";
+import {
+  aircraftCategoryForPosition,
+  effectiveFitness,
+  type EffectiveFitness,
+  type LatestApe,
+} from "@/lib/types/pilot";
 import type {
   Pilot,
   Qualification,
@@ -37,7 +42,7 @@ export async function getPilotDirectory(status: "active" | "inactive" = "active"
       .order("full_name"),
     supabase
       .from("ape_records")
-      .select("pilot_id, next_due_date")
+      .select("pilot_id, next_due_date, fit_to_fly")
       .order("last_ape_date", { ascending: false }),
   ]);
 
@@ -45,14 +50,14 @@ export async function getPilotDirectory(status: "active" | "inactive" = "active"
   if (apeRes.error) throw apeRes.error;
 
   // Newest-first, so the first row seen per pilot is their latest APE.
-  const latestApeDue = new Map<string, string>();
+  const latestApe = new Map<string, LatestApe>();
   for (const a of apeRes.data ?? []) {
-    if (!latestApeDue.has(a.pilot_id)) latestApeDue.set(a.pilot_id, a.next_due_date);
+    if (!latestApe.has(a.pilot_id)) latestApe.set(a.pilot_id, a);
   }
 
   return ((pilotsRes.data ?? []) as unknown as Omit<DirectoryRow, "fitness">[]).map((p) => ({
     ...p,
-    fitness: effectiveFitness(p.fit_to_fly, latestApeDue.get(p.id)),
+    fitness: effectiveFitness(p.fit_to_fly, latestApe.get(p.id)),
   }));
 }
 

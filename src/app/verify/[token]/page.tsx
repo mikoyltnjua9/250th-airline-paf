@@ -39,11 +39,11 @@ async function lookupPilot(token: string): Promise<VerifyResult | null> {
 
   if (!data) return null;
 
-  // Latest APE due date feeds the fit/unfit result only -- it's never
+  // Latest APE due date and result feed the fit/unfit answer only -- it's never
   // returned or displayed, so the allow-list of visible fields is unchanged.
   const { data: ape } = await supabase
     .from("ape_records")
-    .select("next_due_date")
+    .select("next_due_date, fit_to_fly")
     .eq("pilot_id", data.id)
     .order("last_ape_date", { ascending: false })
     .limit(1)
@@ -54,7 +54,7 @@ async function lookupPilot(token: string): Promise<VerifyResult | null> {
   return {
     fullName: data.full_name,
     rankLabel: ranks?.label ?? data.rank_code,
-    fitToFly: effectiveFitness(data.fit_to_fly, ape?.next_due_date).fit,
+    fitToFly: effectiveFitness(data.fit_to_fly, ape).fit,
     photoUrl: data.photo_url,
   };
 }

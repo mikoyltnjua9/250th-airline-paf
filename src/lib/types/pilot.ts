@@ -166,24 +166,29 @@ export type TrainingRecord = {
   training_date: string;
 };
 
-export type FitnessReason = "manual" | "ape_expired" | "no_ape";
+export type FitnessReason = "manual" | "ape_expired" | "ape_not_fit" | "no_ape";
+
+/** The two fields of a pilot's latest APE that decide fitness. */
+export type LatestApe = { next_due_date: string; fit_to_fly: boolean };
 export type EffectiveFitness = { fit: boolean; reason: FitnessReason | null };
 
 /**
  * A pilot's real fit-to-fly status: the manual flag on the pilot record AND a
- * current APE. Derived at read time rather than written back to the flag --
+ * current APE whose result was "fit". Derived at read time rather than written back to the flag --
  * an expired APE flips the pilot to unfit automatically with no scheduled
  * job, and renewing the APE flips them back without anyone touching the flag.
- * No APE on file counts as unfit (nothing shows they're medically cleared).
- * Fit through the APE's due date; unfit from the day after.
+ * No APE on file counts as unfit (nothing shows they're medically cleared),
+ * and so does a latest APE whose own result was "not fit". Fit through the
+ * APE's due date; unfit from the day after.
  */
 export function effectiveFitness(
   manualFit: boolean,
-  latestApeNextDue: string | null | undefined,
+  latestApe: LatestApe | null | undefined,
 ): EffectiveFitness {
   if (!manualFit) return { fit: false, reason: "manual" };
-  if (!latestApeNextDue) return { fit: false, reason: "no_ape" };
-  const due = new Date(latestApeNextDue);
+  if (!latestApe) return { fit: false, reason: "no_ape" };
+  if (!latestApe.fit_to_fly) return { fit: false, reason: "ape_not_fit" };
+  const due = new Date(latestApe.next_due_date);
   due.setHours(0, 0, 0, 0);
   const today = new Date();
   today.setHours(0, 0, 0, 0);

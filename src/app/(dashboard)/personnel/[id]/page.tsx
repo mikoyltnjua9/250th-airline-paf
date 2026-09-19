@@ -91,7 +91,7 @@ export default async function PilotProfilePage({
   const currencyItemTypes = currencyItemTypesForPosition(pilot.position);
   const visibleCrewRoles = crewRolesForPosition(crewRoles, pilot.position);
   const latestApe = apeRecords[0] ?? null;
-  const fitness = effectiveFitness(pilot.fit_to_fly, latestApe?.next_due_date);
+  const fitness = effectiveFitness(pilot.fit_to_fly, latestApe);
   const latestStaneval = stanevalRecords[0] ?? null;
 
   return (
