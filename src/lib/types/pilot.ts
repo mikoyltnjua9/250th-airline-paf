@@ -26,11 +26,26 @@ export type Rank = {
   sort_order: number;
 };
 
+export type AircraftCategory = "fixed_wing" | "rotary";
+
 export type AircraftType = {
   code: string;
   label: string;
   sort_order: number;
+  category: AircraftCategory | null;
+  /** false = retired from the fleet list. Kept (not deleted) so existing
+   * qualification/flight records referencing it stay valid history. */
+  active: boolean;
 };
+
+/** Which aircraft category a pilot position flies. Ground Crew and
+ * Maintenance Officer (and any unrecognized legacy value) have no category,
+ * so they aren't restricted to one. */
+export function aircraftCategoryForPosition(position: string): AircraftCategory | null {
+  if (position === "Fixed-Wing Pilot") return "fixed_wing";
+  if (position === "Rotary Pilot") return "rotary";
+  return null;
+}
 
 export type Pilot = {
   id: string;
@@ -56,7 +71,32 @@ export type CrewRole = {
   code: string;
   label: string;
   sort_order: number;
+  /** false = retired (e.g. Check Pilot). Kept, not deleted, so old rows and
+   * their audit history survive -- it just stops displaying. */
+  active: boolean;
+  /** Which aircraft categories' pilots hold this role. */
+  applies_to: AircraftCategory[];
 };
+
+/** Crew roles a pilot of this position is shown. Positions with no aircraft
+ * category (Ground Crew, Maintenance Officer, unrecognized legacy values)
+ * see every active role rather than none. */
+export function crewRolesForPosition(roles: CrewRole[], position: string): CrewRole[] {
+  const category = aircraftCategoryForPosition(position);
+  return roles.filter(
+    (r) => r.active && (category === null || r.applies_to.includes(category)),
+  );
+}
+
+/** Currency requirements differ by position: everyone tracks Last Flight and
+ * IFR; Fixed-Wing adds Peculiar Runways, Rotary adds Night Proficiency.
+ * Other positions keep all four (no restriction is implied for them). */
+export function currencyItemTypesForPosition(position: string): CurrencyItemType[] {
+  const category = aircraftCategoryForPosition(position);
+  if (category === "fixed_wing") return ["last_flight", "ifr", "peculiar_runways"];
+  if (category === "rotary") return ["last_flight", "ifr", "night_proficiency"];
+  return ["last_flight", "ifr", "night_proficiency", "peculiar_runways"];
+}
 
 // One row per (pilot, role) -- like CurrencyItem, not a history log.
 export type PilotCrewQualification = {
@@ -125,6 +165,31 @@ export type TrainingRecord = {
   status: TrainingStatus;
   training_date: string;
 };
+
+export type FitnessReason = "manual" | "ape_expired" | "no_ape";
+export type EffectiveFitness = { fit: boolean; reason: FitnessReason | null };
+
+/**
+ * A pilot's real fit-to-fly status: the manual flag on the pilot record AND a
+ * current APE. Derived at read time rather than written back to the flag --
+ * an expired APE flips the pilot to unfit automatically with no scheduled
+ * job, and renewing the APE flips them back without anyone touching the flag.
+ * No APE on file counts as unfit (nothing shows they're medically cleared).
+ * Fit through the APE's due date; unfit from the day after.
+ */
+export function effectiveFitness(
+  manualFit: boolean,
+  latestApeNextDue: string | null | undefined,
+): EffectiveFitness {
+  if (!manualFit) return { fit: false, reason: "manual" };
+  if (!latestApeNextDue) return { fit: false, reason: "no_ape" };
+  const due = new Date(latestApeNextDue);
+  due.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (due.getTime() < today.getTime()) return { fit: false, reason: "ape_expired" };
+  return { fit: true, reason: null };
+}
 
 /** Derives current/expiring_soon/expired from last_date + validity_days. */
 export function currencyStatus(

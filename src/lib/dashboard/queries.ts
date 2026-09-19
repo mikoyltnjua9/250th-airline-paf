@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAlerts, EXPIRING_SOON_THRESHOLD_DAYS, type Alert, type AlertCategory } from "@/lib/alerts/queries";
 import {
   currencyStatus,
+  currencyItemTypesForPosition,
   CURRENCY_ITEM_LABELS,
   type CurrencyItemType,
   type QualificationStatus,
@@ -23,7 +24,6 @@ export type QualSummaryRow = {
   current: number;
   expiringSoon: number;
   expired: number;
-  inTraining: number;
 };
 
 export type CurrencySummaryRow = {
@@ -45,9 +45,10 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
   const supabase = await createClient();
 
   const [pilotsRes, qualsRes, aircraftTypesRes, currencyRes, alerts] = await Promise.all([
-    supabase.from("pilots").select("id").eq("active", true),
+    supabase.from("pilots").select("id, position").eq("active", true),
     supabase.from("qualifications").select("pilot_id, status, aircraft_type_code"),
-    supabase.from("aircraft_types").select("code, label").order("sort_order"),
+    // Retired aircraft (Fokker F28, N-22B Nomad) stay out of the wing-wide summary.
+    supabase.from("aircraft_types").select("code, label").eq("active", true).order("sort_order"),
     supabase.from("currency_items").select("pilot_id, item_type, last_date, validity_days"),
     getAlerts(),
   ]);
@@ -79,17 +80,23 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
       current: rowsForType.filter((q) => q.status === "current").length,
       expiringSoon: rowsForType.filter((q) => q.status === "expiring_soon").length,
       expired: rowsForType.filter((q) => q.status === "expired").length,
-      inTraining: rowsForType.filter((q) => q.status === "in_training").length,
     };
   });
 
   // --- currency summary, by requirement type -------------------------------
+  // Also drops requirements that don't apply to the pilot's position (e.g. a
+  // Rotary pilot's Peculiar Runways) so they don't skew the wing-wide counts.
+  const positionByPilot = new Map(pilots.map((p) => [p.id, p.position as string]));
   const currencyItems = ((currencyRes.data ?? []) as {
     pilot_id: string;
     item_type: CurrencyItemType;
     last_date: string;
     validity_days: number;
-  }[]).filter((c) => activePilotIds.has(c.pilot_id));
+  }[]).filter(
+    (c) =>
+      activePilotIds.has(c.pilot_id) &&
+      currencyItemTypesForPosition(positionByPilot.get(c.pilot_id) ?? "").includes(c.item_type),
+  );
   const currencyItemTypes = Object.keys(CURRENCY_ITEM_LABELS) as CurrencyItemType[];
   const currencySummary: CurrencySummaryRow[] = currencyItemTypes.map((itemType) => {
     const rowsForType = currencyItems.filter((c) => c.item_type === itemType);

@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { aircraftCategoryForPosition, effectiveFitness, type EffectiveFitness } from "@/lib/types/pilot";
 import type {
   Pilot,
   Qualification,
@@ -19,6 +20,8 @@ export type DirectoryRow = Pick<
   "id" | "full_name" | "rank_code" | "afsn" | "fit_to_fly" | "photo_url"
 > & {
   ranks: { label: string } | null;
+  /** Manual flag combined with APE status -- what the badge should show. */
+  fitness: EffectiveFitness;
 };
 
 /** Defaults to active pilots only -- every wing-wide view (Directory,
@@ -26,14 +29,31 @@ export type DirectoryRow = Pick<
  * deactivated pilot unless explicitly asking for them. */
 export async function getPilotDirectory(status: "active" | "inactive" = "active"): Promise<DirectoryRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("pilots")
-    .select("id, full_name, rank_code, afsn, fit_to_fly, photo_url, ranks(label)")
-    .eq("active", status === "active")
-    .order("full_name");
+  const [pilotsRes, apeRes] = await Promise.all([
+    supabase
+      .from("pilots")
+      .select("id, full_name, rank_code, afsn, fit_to_fly, photo_url, ranks(label)")
+      .eq("active", status === "active")
+      .order("full_name"),
+    supabase
+      .from("ape_records")
+      .select("pilot_id, next_due_date")
+      .order("last_ape_date", { ascending: false }),
+  ]);
 
-  if (error) throw error;
-  return (data ?? []) as unknown as DirectoryRow[];
+  if (pilotsRes.error) throw pilotsRes.error;
+  if (apeRes.error) throw apeRes.error;
+
+  // Newest-first, so the first row seen per pilot is their latest APE.
+  const latestApeDue = new Map<string, string>();
+  for (const a of apeRes.data ?? []) {
+    if (!latestApeDue.has(a.pilot_id)) latestApeDue.set(a.pilot_id, a.next_due_date);
+  }
+
+  return ((pilotsRes.data ?? []) as unknown as Omit<DirectoryRow, "fitness">[]).map((p) => ({
+    ...p,
+    fitness: effectiveFitness(p.fit_to_fly, latestApeDue.get(p.id)),
+  }));
 }
 
 export type WorkloadRow = {
@@ -326,4 +346,24 @@ export async function getAircraftTypes(): Promise<AircraftType[]> {
   const { data, error } = await supabase.from("aircraft_types").select("*").order("sort_order");
   if (error) throw error;
   return data ?? [];
+}
+
+/**
+ * Aircraft to offer in a form for a given pilot: active types only, narrowed
+ * to the pilot's position (Fixed-Wing Pilot -> fixed-wing aircraft, Rotary
+ * Pilot -> rotary). `keepCode` is the aircraft already saved on the record
+ * being edited -- always included even if it's now retired or off-category,
+ * so editing an old record never silently swaps its aircraft (same reason the
+ * Position dropdown surfaces unrecognized values instead of dropping them).
+ */
+export async function getSelectableAircraftTypes(
+  position: string,
+  keepCode?: string,
+): Promise<AircraftType[]> {
+  const category = aircraftCategoryForPosition(position);
+  const all = await getAircraftTypes();
+  return all.filter(
+    (t) =>
+      t.code === keepCode || (t.active && (category === null || t.category === category)),
+  );
 }

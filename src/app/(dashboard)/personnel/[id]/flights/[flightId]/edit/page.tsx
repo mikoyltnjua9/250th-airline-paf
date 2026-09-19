@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FlightForm } from "@/components/pilots/flight-form";
-import { getPilotProfile, getFlight, getAircraftTypes } from "@/lib/pilots/queries";
+import { getPilotProfile, getFlight, getSelectableAircraftTypes } from "@/lib/pilots/queries";
 import { updateFlight } from "@/app/(dashboard)/personnel/[id]/flights/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
 
@@ -15,15 +15,18 @@ export default async function EditFlightPage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, flightId } = await params;
-  const [profile, flight, aircraftTypes, { error, values }] = await Promise.all([
+  const [profile, flight, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getFlight(id, flightId),
-    getAircraftTypes(),
     searchParams,
   ]);
   const preserved = parsePreservedValues(values);
 
   if (!profile || !flight) notFound();
+  const aircraftTypes = await getSelectableAircraftTypes(
+    profile.pilot.position,
+    flight.aircraft_type_code,
+  );
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

@@ -2,6 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import {
   currencyStatus,
+  currencyItemTypesForPosition,
+  effectiveFitness,
   CURRENCY_ITEM_LABELS,
   type CurrencyItemType,
   type QualificationStatus,
@@ -50,12 +52,12 @@ export async function getAlerts(): Promise<Alert[]> {
   const [pilotsRes, qualsRes, currencyRes, apeRes, stanevalRes] = await Promise.all([
     supabase
       .from("pilots")
-      .select("id, full_name, rank_code, fit_to_fly, ranks(label)")
+      .select("id, full_name, rank_code, position, fit_to_fly, ranks(label)")
       .eq("active", true)
       .order("full_name"),
     supabase
       .from("qualifications")
-      .select("pilot_id, status, aircraft_type_code, expiry_date, aircraft_types(label)"),
+      .select("pilot_id, status, aircraft_type_code, expiry_date, aircraft_types(label, active)"),
     supabase.from("currency_items").select("pilot_id, item_type, last_date, validity_days"),
     supabase
       .from("ape_records")
@@ -77,6 +79,7 @@ export async function getAlerts(): Promise<Alert[]> {
     id: string;
     full_name: string;
     rank_code: string;
+    position: string;
     fit_to_fly: boolean;
     ranks: { label: string } | null;
   }[];
@@ -123,10 +126,18 @@ export async function getAlerts(): Promise<Alert[]> {
   // always "expired" severity (matches how the APE module treats "not fit
   // to fly") and sorts by today's date since there's no better one to use.
   const today = new Date().toISOString().slice(0, 10);
+  const latestApe = latestPerPilot(
+    (apeRes.data ?? []) as { pilot_id: string; fit_to_fly: boolean; next_due_date: string }[],
+  );
   for (const p of pilots) {
-    if (!p.fit_to_fly) {
+    const { reason } = effectiveFitness(p.fit_to_fly, latestApe.get(p.id)?.next_due_date);
+    if (reason === "manual") {
       pushAlert(p.id, "fitness", "", "Marked unfit to fly", today, "expired");
+    } else if (reason === "no_ape") {
+      pushAlert(p.id, "fitness", "", "No APE on file — treated as unfit to fly", today, "expired");
     }
+    // reason === "ape_expired" is deliberately not alerted here: the APE
+    // section below already raises "APE overdue" for the same pilot.
   }
 
   // --- qualifications ---------------------------------------------------
@@ -135,11 +146,14 @@ export async function getAlerts(): Promise<Alert[]> {
     status: QualificationStatus;
     aircraft_type_code: string;
     expiry_date: string | null;
-    aircraft_types: { label: string } | null;
+    aircraft_types: { label: string; active: boolean } | null;
   }[];
 
   for (const q of quals) {
     if (!activePilotIds.has(q.pilot_id)) continue;
+    // Retired aircraft (no longer in the wing's fleet) shouldn't raise alerts;
+    // the record itself stays on file as history.
+    if (q.aircraft_types && !q.aircraft_types.active) continue;
     if (q.status === "expired" || q.status === "expiring_soon") {
       const label = q.aircraft_types?.label ?? q.aircraft_type_code;
       // Falls back to "today" only for the rare row with no expiry_date on
@@ -166,6 +180,10 @@ export async function getAlerts(): Promise<Alert[]> {
 
   for (const item of currencyItems) {
     if (!activePilotIds.has(item.pilot_id)) continue;
+    // Requirement doesn't apply to this pilot's position (e.g. Peculiar
+    // Runways for a Rotary pilot) -- the record stays, it just can't alert.
+    const itemPosition = pilots.find((p) => p.id === item.pilot_id)?.position ?? "";
+    if (!currencyItemTypesForPosition(itemPosition).includes(item.item_type)) continue;
     const status = currencyStatus(item, EXPIRING_SOON_THRESHOLD_DAYS);
     if (status === "expired" || status === "expiring_soon") {
       const expiresAt = new Date(item.last_date);
@@ -182,9 +200,6 @@ export async function getAlerts(): Promise<Alert[]> {
   }
 
   // --- APE (most recent per pilot) -----------------------------------------
-  const latestApe = latestPerPilot(
-    (apeRes.data ?? []) as { pilot_id: string; fit_to_fly: boolean; next_due_date: string }[],
-  );
   for (const [pilotId, ape] of latestApe) {
     if (!activePilotIds.has(pilotId)) continue;
     if (!ape.fit_to_fly) {

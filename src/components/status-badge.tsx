@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type {
+  FitnessReason,
   QualificationStatus,
   StanevalStatus,
   TrainingStatus,
@@ -32,7 +33,22 @@ export function StatusBadge({ status }: { status: QualificationStatus }) {
   );
 }
 
-export function FitToFlyBadge({ fitToFly }: { fitToFly: boolean }) {
+const FITNESS_REASON_SUFFIX: Record<FitnessReason, string> = {
+  manual: "",
+  ape_expired: " · APE expired",
+  no_ape: " · No APE on file",
+};
+
+/** reason is only passed on internal screens. The public verify page and
+ * printed ID card leave it off -- a stranger scanning a QR should learn
+ * fit/unfit, not why. */
+export function FitToFlyBadge({
+  fitToFly,
+  reason,
+}: {
+  fitToFly: boolean;
+  reason?: FitnessReason | null;
+}) {
   return (
     <span
       className={cn(
@@ -42,7 +58,7 @@ export function FitToFlyBadge({ fitToFly }: { fitToFly: boolean }) {
           : "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300",
       )}
     >
-      {fitToFly ? "Fit to Fly" : "Unfit to Fly"}
+      {fitToFly ? "Fit to Fly" : "Unfit to Fly" + (reason ? FITNESS_REASON_SUFFIX[reason] : "")}
     </span>
   );
 }

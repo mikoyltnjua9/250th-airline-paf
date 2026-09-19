@@ -43,11 +43,11 @@ import { deleteStanevalRecord } from "@/app/(dashboard)/personnel/[id]/staneval/
 import { deleteTrainingRecord } from "@/app/(dashboard)/personnel/[id]/training/actions";
 import {
   currencyStatus,
+  currencyItemTypesForPosition,
+  crewRolesForPosition,
+  effectiveFitness,
   CURRENCY_ITEM_LABELS,
-  type CurrencyItemType,
 } from "@/lib/types/pilot";
-
-const CURRENCY_ITEM_TYPES = Object.keys(CURRENCY_ITEM_LABELS) as CurrencyItemType[];
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -88,7 +88,10 @@ export default async function PilotProfilePage({
     crewQualifications,
   } = profile;
 
+  const currencyItemTypes = currencyItemTypesForPosition(pilot.position);
+  const visibleCrewRoles = crewRolesForPosition(crewRoles, pilot.position);
   const latestApe = apeRecords[0] ?? null;
+  const fitness = effectiveFitness(pilot.fit_to_fly, latestApe?.next_due_date);
   const latestStaneval = stanevalRecords[0] ?? null;
 
   return (
@@ -144,7 +147,7 @@ export default async function PilotProfilePage({
                   <p className="text-xs text-muted-foreground">AFSN</p>
                   <p className="font-medium">{pilot.afsn}</p>
                 </div>
-                <FitToFlyBadge fitToFly={pilot.fit_to_fly} />
+                <FitToFlyBadge fitToFly={fitness.fit} reason={fitness.reason} />
               </div>
               {(pilot.contact_phone || pilot.contact_email) && (
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -227,7 +230,7 @@ export default async function PilotProfilePage({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {crewRoles.map((role) => {
+              {visibleCrewRoles.map((role) => {
                 const q = crewQualifications.find((cq) => cq.role_code === role.code);
                 return (
                   <div
@@ -417,7 +420,7 @@ export default async function PilotProfilePage({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {CURRENCY_ITEM_TYPES.map((itemType) => {
+              {currencyItemTypes.map((itemType) => {
                 const item = currencyItems.find((c) => c.item_type === itemType);
                 return (
                   <div

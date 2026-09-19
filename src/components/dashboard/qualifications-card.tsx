@@ -19,7 +19,7 @@ export function QualificationsCard({ rows }: { rows: QualSummaryRow[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Equipment Qualifications</CardTitle>
+        <CardTitle>Pilots Status</CardTitle>
         <CardDescription>Pilots qualified per aircraft type, by status.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -31,7 +31,7 @@ export function QualificationsCard({ rows }: { rows: QualSummaryRow[] }) {
               {rows.map((row) => (
                 <div key={row.aircraftTypeCode} className="rounded-lg border p-3">
                   <p className="font-medium">{row.aircraftTypeLabel}</p>
-                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <div className="mt-2 grid grid-cols-3 gap-x-4 gap-y-1 text-sm">
                     <p>
                       <span className="font-medium text-emerald-600 dark:text-emerald-400">
                         {row.current}
@@ -50,12 +50,6 @@ export function QualificationsCard({ rows }: { rows: QualSummaryRow[] }) {
                       </span>{" "}
                       <span className="text-muted-foreground">expired</span>
                     </p>
-                    <p>
-                      <span className="font-medium text-sky-600 dark:text-sky-400">
-                        {row.inTraining}
-                      </span>{" "}
-                      <span className="text-muted-foreground">in training</span>
-                    </p>
                   </div>
                 </div>
               ))}
@@ -69,7 +63,6 @@ export function QualificationsCard({ rows }: { rows: QualSummaryRow[] }) {
                     <TableHead className="text-right">Current</TableHead>
                     <TableHead className="text-right">Expiring</TableHead>
                     <TableHead className="text-right">Expired</TableHead>
-                    <TableHead className="text-right">In Training</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -86,9 +79,6 @@ export function QualificationsCard({ rows }: { rows: QualSummaryRow[] }) {
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-red-600 dark:text-red-400">
                         {row.expired || "–"}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums text-sky-600 dark:text-sky-400">
-                        {row.inTraining || "–"}
                       </TableCell>
                     </TableRow>
                   ))}

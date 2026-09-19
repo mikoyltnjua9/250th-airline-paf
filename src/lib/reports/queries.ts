@@ -2,6 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getAlerts } from "@/lib/alerts/queries";
 import {
+  currencyItemTypesForPosition,
+  effectiveFitness,
   currencyStatus,
   CURRENCY_ITEM_LABELS,
   type CurrencyItemType,
@@ -60,14 +62,27 @@ function latestPerPilot<T extends { pilot_id: string }>(rows: T[]): T[] {
 
 async function rosterRows(): Promise<ReportRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("pilots")
-    .select("full_name, afsn, position, rank_code, fit_to_fly, ranks(label)")
-    .eq("active", true)
-    .order("full_name");
+  const [{ data, error }, apeRes] = await Promise.all([
+    supabase
+      .from("pilots")
+      .select("id, full_name, afsn, position, rank_code, fit_to_fly, ranks(label)")
+      .eq("active", true)
+      .order("full_name"),
+    supabase
+      .from("ape_records")
+      .select("pilot_id, next_due_date")
+      .order("last_ape_date", { ascending: false }),
+  ]);
   if (error) throw error;
+  if (apeRes.error) throw apeRes.error;
+
+  const latestApeDue = new Map<string, string>();
+  for (const a of apeRes.data ?? []) {
+    if (!latestApeDue.has(a.pilot_id)) latestApeDue.set(a.pilot_id, a.next_due_date);
+  }
 
   return ((data ?? []) as unknown as {
+    id: string;
     full_name: string;
     afsn: string;
     position: string;
@@ -79,7 +94,7 @@ async function rosterRows(): Promise<ReportRow[]> {
     "Full Name": p.full_name,
     AFSN: p.afsn,
     Position: p.position,
-    "Fit to Fly": p.fit_to_fly ? "Yes" : "No",
+    "Fit to Fly": effectiveFitness(p.fit_to_fly, latestApeDue.get(p.id)).fit ? "Yes" : "No",
   }));
 }
 
@@ -123,7 +138,7 @@ async function currencyRows(): Promise<ReportRow[]> {
   const { data, error } = await supabase
     .from("currency_items")
     .select(
-      "item_type, last_date, validity_days, pilots(full_name, rank_code, active, ranks(label))",
+      "item_type, last_date, validity_days, pilots(full_name, rank_code, position, active, ranks(label))",
     )
     .order("pilot_id");
   if (error) throw error;
@@ -132,11 +147,14 @@ async function currencyRows(): Promise<ReportRow[]> {
     item_type: CurrencyItemType;
     last_date: string;
     validity_days: number;
-    pilots: { full_name: string; rank_code: string; active: boolean; ranks: { label: string } | null } | null;
+    pilots: { full_name: string; rank_code: string; position: string; active: boolean; ranks: { label: string } | null } | null;
   }[];
 
   return rows
     .filter((c) => c.pilots?.active === true)
+    // Requirements that don't apply to the pilot's position (e.g. Peculiar
+    // Runways for Rotary) are left out, matching the profile and dashboard.
+    .filter((c) => currencyItemTypesForPosition(c.pilots?.position ?? "").includes(c.item_type))
     .map((c) => {
       const expiresAt = new Date(c.last_date);
       expiresAt.setDate(expiresAt.getDate() + c.validity_days);

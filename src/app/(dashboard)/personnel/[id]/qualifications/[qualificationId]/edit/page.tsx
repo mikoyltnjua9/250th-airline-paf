@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QualificationForm } from "@/components/pilots/qualification-form";
-import { getPilotProfile, getQualification, getAircraftTypes } from "@/lib/pilots/queries";
+import { getPilotProfile, getQualification, getSelectableAircraftTypes } from "@/lib/pilots/queries";
 import { updateQualification } from "@/app/(dashboard)/personnel/[id]/qualifications/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
 
@@ -15,15 +15,18 @@ export default async function EditQualificationPage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, qualificationId } = await params;
-  const [profile, qualification, aircraftTypes, { error, values }] = await Promise.all([
+  const [profile, qualification, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getQualification(id, qualificationId),
-    getAircraftTypes(),
     searchParams,
   ]);
   const preserved = parsePreservedValues(values);
 
   if (!profile || !qualification) notFound();
+  const aircraftTypes = await getSelectableAircraftTypes(
+    profile.pilot.position,
+    qualification.aircraft_type_code,
+  );
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

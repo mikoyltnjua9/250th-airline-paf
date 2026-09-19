@@ -4,6 +4,7 @@ import { PilotAvatar } from "@/components/pilots/pilot-avatar";
 import { FitToFlyBadge } from "@/components/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { effectiveFitness } from "@/lib/types/pilot";
 
 // Never index a page that names a real person, even minimally.
 export const metadata: Metadata = {
@@ -32,18 +33,28 @@ async function lookupPilot(token: string): Promise<VerifyResult | null> {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("pilots")
-    .select("full_name, rank_code, fit_to_fly, photo_url, ranks(label)")
+    .select("id, full_name, rank_code, fit_to_fly, photo_url, ranks(label)")
     .eq("public_verify_token", token)
     .maybeSingle();
 
   if (!data) return null;
+
+  // Latest APE due date feeds the fit/unfit result only -- it's never
+  // returned or displayed, so the allow-list of visible fields is unchanged.
+  const { data: ape } = await supabase
+    .from("ape_records")
+    .select("next_due_date")
+    .eq("pilot_id", data.id)
+    .order("last_ape_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   const ranks = data.ranks as unknown as { label: string } | null;
 
   return {
     fullName: data.full_name,
     rankLabel: ranks?.label ?? data.rank_code,
-    fitToFly: data.fit_to_fly,
+    fitToFly: effectiveFitness(data.fit_to_fly, ape?.next_due_date).fit,
     photoUrl: data.photo_url,
   };
 }

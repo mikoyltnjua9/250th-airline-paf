@@ -62,7 +62,7 @@ function PilotList({
           {showReactivate ? (
             <ReactivatePilotButton pilotId={pilot.id} />
           ) : (
-            <FitToFlyBadge fitToFly={pilot.fit_to_fly} />
+            <FitToFlyBadge fitToFly={pilot.fitness.fit} reason={pilot.fitness.reason} />
           )}
         </Link>
       ))}
