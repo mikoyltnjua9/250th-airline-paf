@@ -1,4 +1,3 @@
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -8,8 +7,6 @@ import type { AircraftType } from "@/lib/types/pilot";
 export type QualificationFormDefaults = Partial<{
   aircraft_type_code: string;
   status: string;
-  date_earned: string;
-  expiry_date: string;
 }>;
 
 export function QualificationForm({
@@ -73,24 +70,6 @@ export function QualificationForm({
             <option value="expired">Expired</option>
             <option value="in_training">In Training</option>
           </NativeSelect>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="date_earned">Date earned</Label>
-          <Input
-            id="date_earned"
-            name="date_earned"
-            type="date"
-            defaultValue={defaultValues?.date_earned}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="expiry_date">Expiry date</Label>
-          <Input
-            id="expiry_date"
-            name="expiry_date"
-            type="date"
-            defaultValue={defaultValues?.expiry_date}
-          />
         </div>
       </div>
 

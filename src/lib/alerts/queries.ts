@@ -2,12 +2,15 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import {
   currencyStatus,
+  currencyExpiryDate,
   currencyItemTypesForPosition,
   effectiveFitness,
   CURRENCY_ITEM_LABELS,
   type CurrencyItemType,
   type QualificationStatus,
 } from "@/lib/types/pilot";
+
+import { daysUntilDate, todayInManila } from "@/lib/dates";
 
 export const EXPIRING_SOON_THRESHOLD_DAYS = 30;
 
@@ -29,11 +32,7 @@ export type Alert = {
 };
 
 function daysUntil(iso: string): number {
-  const target = new Date(iso);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  target.setHours(0, 0, 0, 0);
-  return Math.round((target.getTime() - today.getTime()) / 86_400_000);
+  return daysUntilDate(iso);
 }
 
 /** Keeps only the most recent row per pilot_id from a list already ordered
@@ -125,7 +124,7 @@ export async function getAlerts(): Promise<Alert[]> {
   // No date involved -- this is a persistent flag, not a countdown, so it's
   // always "expired" severity (matches how the APE module treats "not fit
   // to fly") and sorts by today's date since there's no better one to use.
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInManila();
   const latestApe = latestPerPilot(
     (apeRes.data ?? []) as { pilot_id: string; fit_to_fly: boolean; next_due_date: string }[],
   );
@@ -159,7 +158,7 @@ export async function getAlerts(): Promise<Alert[]> {
       const label = q.aircraft_types?.label ?? q.aircraft_type_code;
       // Falls back to "today" only for the rare row with no expiry_date on
       // file at all — every seeded row has one, this is just a guard.
-      const dueDate = q.expiry_date ?? new Date().toISOString().slice(0, 10);
+      const dueDate = q.expiry_date ?? todayInManila();
       pushAlert(
         q.pilot_id,
         "qualification",
@@ -187,14 +186,12 @@ export async function getAlerts(): Promise<Alert[]> {
     if (!currencyItemTypesForPosition(itemPosition).includes(item.item_type)) continue;
     const status = currencyStatus(item, EXPIRING_SOON_THRESHOLD_DAYS);
     if (status === "expired" || status === "expiring_soon") {
-      const expiresAt = new Date(item.last_date);
-      expiresAt.setDate(expiresAt.getDate() + item.validity_days);
       pushAlert(
         item.pilot_id,
         "currency",
         item.item_type,
         `${CURRENCY_ITEM_LABELS[item.item_type]} ${status === "expired" ? "lapsed" : "expiring"}`,
-        expiresAt.toISOString().slice(0, 10),
+        currencyExpiryDate(item),
         status,
       );
     }

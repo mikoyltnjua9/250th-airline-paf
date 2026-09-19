@@ -54,8 +54,6 @@ export default async function EditQualificationPage({
               preserved ?? {
                 aircraft_type_code: qualification.aircraft_type_code,
                 status: qualification.status,
-                date_earned: qualification.date_earned ?? "",
-                expiry_date: qualification.expiry_date ?? "",
               }
             }
           />

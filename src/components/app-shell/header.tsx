@@ -8,6 +8,7 @@ import { RefreshButton } from "@/components/app-shell/refresh-button";
 
 function formatLastUpdated(date: Date) {
   return date.toLocaleString("en-US", {
+    timeZone: "Asia/Manila",
     day: "2-digit",
     month: "short",
     year: "numeric",

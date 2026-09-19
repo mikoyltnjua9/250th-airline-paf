@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getAlerts } from "@/lib/alerts/queries";
 import {
+  currencyExpiryDate,
   currencyItemTypesForPosition,
   effectiveFitness,
   currencyStatus,
@@ -156,15 +157,13 @@ async function currencyRows(): Promise<ReportRow[]> {
     // Runways for Rotary) are left out, matching the profile and dashboard.
     .filter((c) => currencyItemTypesForPosition(c.pilots?.position ?? "").includes(c.item_type))
     .map((c) => {
-      const expiresAt = new Date(c.last_date);
-      expiresAt.setDate(expiresAt.getDate() + c.validity_days);
       const status = currencyStatus(c);
       return {
         Rank: c.pilots?.ranks?.label ?? c.pilots?.rank_code ?? "—",
         "Full Name": c.pilots?.full_name ?? "Unknown pilot",
         Requirement: CURRENCY_ITEM_LABELS[c.item_type],
         "Last Date": formatDate(c.last_date),
-        Expires: formatDate(expiresAt.toISOString().slice(0, 10)),
+        Expires: formatDate(currencyExpiryDate(c)),
         Status: QUAL_STATUS_LABELS[status],
       };
     })

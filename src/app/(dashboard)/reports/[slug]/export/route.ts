@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getReportDefinition } from "@/lib/reports/queries";
 import { toCsv } from "@/lib/reports/csv";
+import { todayInManila } from "@/lib/dates";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -17,7 +18,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   // is the full authorization model.
   const rows = await report.getRows();
   const csv = toCsv(report.columns, rows);
-  const date = new Date().toISOString().slice(0, 10);
+  const date = todayInManila();
 
   return new NextResponse(csv, {
     headers: {

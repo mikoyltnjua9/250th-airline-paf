@@ -9,9 +9,12 @@ import { redirectWithFormError } from "@/lib/forms/error-redirect";
 const qualificationFormSchema = z.object({
   aircraft_type_code: z.string().trim().min(1, "Aircraft type is required"),
   status: z.enum(["current", "expiring_soon", "expired", "in_training"]),
-  date_earned: z.string().trim().optional(),
-  expiry_date: z.string().trim().optional(),
 });
+
+// date_earned / expiry_date were removed from the form at the client's
+// request. The columns stay in the table and are deliberately NOT written
+// here -- an edit must never blank out dates already on file for older
+// records.
 
 export async function createQualification(formData: FormData) {
   const pilotId = String(formData.get("pilot_id") ?? "");
@@ -34,8 +37,6 @@ export async function createQualification(formData: FormData) {
     pilot_id: pilotId,
     aircraft_type_code: parsed.data.aircraft_type_code,
     status: parsed.data.status,
-    date_earned: parsed.data.date_earned || null,
-    expiry_date: parsed.data.expiry_date || null,
     created_by: user?.id,
     updated_by: user?.id,
   });
@@ -78,8 +79,6 @@ export async function updateQualification(formData: FormData) {
     .update({
       aircraft_type_code: parsed.data.aircraft_type_code,
       status: parsed.data.status,
-      date_earned: parsed.data.date_earned || null,
-      expiry_date: parsed.data.expiry_date || null,
       updated_by: user?.id,
     })
     .eq("id", qualificationId);

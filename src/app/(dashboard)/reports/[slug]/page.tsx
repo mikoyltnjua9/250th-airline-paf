@@ -24,6 +24,7 @@ export default async function ReportDetailPage({
 
   const rows = await report.getRows();
   const generatedAt = new Date().toLocaleString("en-US", {
+    timeZone: "Asia/Manila",
     dateStyle: "long",
     timeStyle: "short",
   });

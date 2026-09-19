@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { addDaysIso, currentMonthBoundsInManila, formatIsoDate, todayInManila } from "@/lib/dates";
 import {
   aircraftCategoryForPosition,
   effectiveFitness,
@@ -73,9 +74,7 @@ export type WorkloadRow = {
 export async function getDutyWorkload(windowDays = 30): Promise<WorkloadRow[]> {
   const supabase = await createClient();
 
-  const since = new Date();
-  since.setDate(since.getDate() - windowDays);
-  const sinceIso = since.toISOString().slice(0, 10);
+  const sinceIso = addDaysIso(todayInManila(), -windowDays);
 
   const [pilotsRes, flightsRes] = await Promise.all([
     supabase
@@ -229,11 +228,7 @@ export type DutyStatus = {
 export async function getDutyStatus(pilotId: string): Promise<DutyStatus> {
   const supabase = await createClient();
 
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const startIso = start.toISOString().slice(0, 10);
-  const endIso = end.toISOString().slice(0, 10);
+  const { start: startIso, end: endIso } = currentMonthBoundsInManila();
 
   const { data, error } = await supabase
     .from("flights")
@@ -247,7 +242,7 @@ export async function getDutyStatus(pilotId: string): Promise<DutyStatus> {
   const cap = 18;
   const band: DutyBand = dutyDays <= 6 ? "optimal" : dutyDays <= 12 ? "normal" : "high";
 
-  const periodLabel = `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+  const periodLabel = `${formatIsoDate(startIso, { month: "short", day: "numeric" })} – ${formatIsoDate(endIso, { month: "short", day: "numeric", year: "numeric" })}`;
 
   return { dutyDays, cap, band, periodLabel };
 }

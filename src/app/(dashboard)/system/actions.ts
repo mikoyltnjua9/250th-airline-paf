@@ -3,14 +3,28 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { generatePassword } from "@/lib/auth/generate-password";
+import { getCurrentProfile } from "@/lib/auth/get-profile";
+import { hasPermission } from "@/lib/permissions";
 
 const createAccountSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required"),
   email: z.string().trim().email("Enter a valid email address"),
   role_code: z.string().trim().min(1, "Role is required"),
 });
+
+/**
+ * Every account action goes through the admin (service-role) client, which
+ * bypasses RLS entirely -- so the caller's permission has to be checked here
+ * explicitly, not assumed from being signed in.
+ */
+async function requireUsersManage() {
+  const profile = await getCurrentProfile();
+  if (!profile || !hasPermission(profile.role_code, "users:manage")) {
+    throw new Error("You don't have permission to manage accounts.");
+  }
+  return profile;
+}
 
 export type CreateAccountState = {
   error?: string;
@@ -28,6 +42,12 @@ export async function createAccount(
   _prevState: CreateAccountState,
   formData: FormData,
 ): Promise<CreateAccountState> {
+  try {
+    await requireUsersManage();
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Not authorized." };
+  }
+
   const parsed = createAccountSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -56,20 +76,75 @@ export async function createAccount(
 }
 
 export async function deleteAccount(userId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const me = await requireUsersManage();
 
   // Belt-and-suspenders: the UI already hides this control on your own row,
   // but never let a signed-in admin delete themselves mid-session either way.
-  if (user?.id === userId) {
+  if (me.id === userId) {
     throw new Error("You can't delete your own account while signed in.");
   }
 
   const admin = createAdminClient();
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) throw error;
+
+  revalidatePath("/system");
+}
+
+export type AccountActionResult = { error?: string; password?: string };
+
+const renameSchema = z.string().trim().min(1, "Name can't be empty").max(100, "Name is too long");
+
+export async function renameAccount(userId: string, fullName: string): Promise<AccountActionResult> {
+  await requireUsersManage();
+  const parsed = renameSchema.safeParse(fullName);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid name." };
+
+  // profiles.full_name is what the app displays everywhere (header, audit
+  // log, account list); auth metadata is only read once, at account creation.
+  const admin = createAdminClient();
+  const { error } = await admin.from("profiles").update({ full_name: parsed.data }).eq("id", userId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/system");
+  return {};
+}
+
+/**
+ * Sets a new random password and returns it once -- same one-time-display
+ * approach as account creation (returned to the client in memory, never put
+ * in a URL). The account's 2FA is untouched: they still need their
+ * authenticator, so a leaked password alone isn't enough to get in.
+ */
+export async function resetAccountPassword(userId: string): Promise<AccountActionResult> {
+  await requireUsersManage();
+  const password = generatePassword();
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(userId, { password });
+  if (error) return { error: error.message };
+  return { password };
+}
+
+/**
+ * Removes the account's authenticator so the next sign-in walks them through
+ * 2FA enrollment again (for a lost or replaced phone). Blocked on your own
+ * account: resetting your own 2FA mid-session would let anyone at an
+ * unlocked laptop strip it, and an admin locked out of their own account
+ * should be reset by another admin.
+ */
+export async function resetAccountTwoFactor(userId: string): Promise<void> {
+  const me = await requireUsersManage();
+  if (me.id === userId) {
+    throw new Error("You can't reset your own 2FA. Ask another admin.");
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.mfa.listFactors({ userId });
+  if (error) throw error;
+  for (const factor of data?.factors ?? []) {
+    const { error: delError } = await admin.auth.admin.mfa.deleteFactor({ id: factor.id, userId });
+    if (delError) throw delError;
+  }
 
   revalidatePath("/system");
 }

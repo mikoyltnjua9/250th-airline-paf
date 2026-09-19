@@ -125,6 +125,9 @@ export type Flight = {
   flying_time_hours: number;
 };
 
+/** APE classification, as the client defined it (was free text). */
+export const APE_CLASSIFICATIONS = ["P1", "P2", "P3"] as const;
+
 export type ApeRecord = {
   id: string;
   pilot_id: string;
@@ -166,6 +169,8 @@ export type TrainingRecord = {
   training_date: string;
 };
 
+import { addDaysIso, daysUntilDate } from "@/lib/dates";
+
 export type FitnessReason = "manual" | "ape_expired" | "ape_not_fit" | "no_ape";
 
 /** The two fields of a pilot's latest APE that decide fitness. */
@@ -188,22 +193,27 @@ export function effectiveFitness(
   if (!manualFit) return { fit: false, reason: "manual" };
   if (!latestApe) return { fit: false, reason: "no_ape" };
   if (!latestApe.fit_to_fly) return { fit: false, reason: "ape_not_fit" };
-  const due = new Date(latestApe.next_due_date);
-  due.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (due.getTime() < today.getTime()) return { fit: false, reason: "ape_expired" };
+  if (daysUntilDate(latestApe.next_due_date) < 0) return { fit: false, reason: "ape_expired" };
   return { fit: true, reason: null };
 }
 
-/** Derives current/expiring_soon/expired from last_date + validity_days. */
+/** The date a currency item lapses: last_date plus its validity window. */
+export function currencyExpiryDate(
+  item: Pick<CurrencyItem, "last_date" | "validity_days">,
+): string {
+  return addDaysIso(item.last_date, item.validity_days);
+}
+
+/**
+ * Derives current/expiring_soon/expired from last_date + validity_days, by
+ * whole Manila calendar days. Valid through the expiry date itself and
+ * expired from the day after -- the same rule APE, StanEval and alerts use.
+ */
 export function currencyStatus(
   item: Pick<CurrencyItem, "last_date" | "validity_days">,
   thresholdDays = 30,
 ): QualificationStatus {
-  const expiresAt = new Date(item.last_date);
-  expiresAt.setDate(expiresAt.getDate() + item.validity_days);
-  const daysLeft = Math.floor((expiresAt.getTime() - Date.now()) / 86_400_000);
+  const daysLeft = daysUntilDate(currencyExpiryDate(item));
 
   if (daysLeft < 0) return "expired";
   if (daysLeft <= thresholdDays) return "expiring_soon";

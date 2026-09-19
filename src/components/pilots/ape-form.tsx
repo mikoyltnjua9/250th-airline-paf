@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { APE_CLASSIFICATIONS } from "@/lib/types/pilot";
 
 export type ApeFormDefaults = Partial<{
   last_ape_date: string;
@@ -73,12 +74,26 @@ export function ApeForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="classification">Classification</Label>
-          <Input
+          <NativeSelect
             id="classification"
             name="classification"
-            placeholder="e.g. Class 1"
-            defaultValue={defaultValues?.classification}
-          />
+            defaultValue={defaultValues?.classification ?? ""}
+          >
+            <option value="">Not specified</option>
+            {/* A stored value outside P1-P3 (older free-text entries) is
+                shown rather than silently dropped on the next save. */}
+            {defaultValues?.classification &&
+              !(APE_CLASSIFICATIONS as readonly string[]).includes(defaultValues.classification) && (
+                <option value={defaultValues.classification}>
+                  {defaultValues.classification} (unrecognized — please update)
+                </option>
+              )}
+            {APE_CLASSIFICATIONS.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </NativeSelect>
         </div>
       </div>
 

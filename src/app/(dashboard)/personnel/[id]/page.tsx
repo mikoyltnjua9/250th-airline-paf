@@ -200,10 +200,6 @@ export default async function PilotProfilePage({
                       </p>
                       <StatusBadge status={q.status} />
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {q.date_earned ? `Earned ${formatDate(q.date_earned)}` : "In progress"}
-                      {q.expiry_date ? ` · Expires ${formatDate(q.expiry_date)}` : ""}
-                    </p>
                     <div className="mt-2 flex justify-end gap-2">
                       <Button asChild variant="outline" size="sm">
                         <Link href={`/personnel/${id}/qualifications/${q.id}/edit`}>Edit</Link>
