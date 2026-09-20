@@ -1,0 +1,9 @@
+{
+  "name": "exam-import",
+  "private": true,
+  "description": "Offline tool: parses the client's exam files (exams/ folder, git-ignored) and loads them into Supabase. Its own dependencies keep the spreadsheet/Word readers out of the app.",
+  "dependencies": {
+    "mammoth": "^1.8.0",
+    "xlsx": "^0.18.5"
+  }
+}

@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Exam question banks and answer keys supplied by the client -- must never be committed
+/exams/
+/scripts/exam-import/node_modules/
