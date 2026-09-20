@@ -35,6 +35,10 @@ import {
 import { getPilotProfile, getDutyStatus } from "@/lib/pilots/queries";
 import { getAlerts } from "@/lib/alerts/queries";
 import { PersonExamsCard } from "@/components/exams/person-exams-card";
+import { getCbtaAssessments } from "@/lib/cbta/queries";
+import { OUTCOME_LABELS } from "@/lib/cbta/competencies";
+import { deleteCbtaAssessment } from "@/app/(dashboard)/personnel/[id]/cbta/actions";
+import { formatIsoDate } from "@/lib/dates";
 import { getPersonExams, getRecentAttempts } from "@/lib/exams/admin-queries";
 import { deactivatePilot } from "@/app/(dashboard)/personnel/actions";
 import { deleteQualification } from "@/app/(dashboard)/personnel/[id]/qualifications/actions";
@@ -100,6 +104,7 @@ export default async function PilotProfilePage({
     personnelType === "maintenance" || personnelType === "cabin_crew"
       ? await Promise.all([getPersonExams(id, personnelType), getRecentAttempts(20, id)])
       : null;
+  const cbtaSlips = isPilot ? await getCbtaAssessments(id) : [];
   const currencyItemTypes = currencyItemTypesForPosition(pilot.position);
   const visibleCrewRoles = crewRolesForPosition(crewRoles, pilot.position);
   const latestApe = apeRecords[0] ?? null;
@@ -549,6 +554,66 @@ export default async function PilotProfilePage({
           </CardContent>
         </Card>
       </div>
+
+      {isPilot && (
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <div>
+              <CardTitle>CBTA Grade Slips</CardTitle>
+              <CardDescription>Competency-based training and checking assessments.</CardDescription>
+            </div>
+            <Button asChild size="sm" className="print:hidden">
+              <Link href={`/personnel/${id}/cbta/new`}>New Grade Slip</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {cbtaSlips.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No grade slips on file.</p>
+            ) : (
+              <div className="space-y-2">
+                {cbtaSlips.map((slip) => (
+                  <div
+                    key={slip.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                  >
+                    <Link href={`/personnel/${id}/cbta/${slip.id}`} className="min-w-0 flex-1 hover:underline">
+                      <p className="truncate font-medium">
+                        {slip.lesson || (slip.mode === "checking" ? "Checking" : "Training")}
+                        <span
+                          className={
+                            slip.outcome === "passed"
+                              ? "ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300"
+                              : "ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-500/15 dark:text-red-300"
+                          }
+                        >
+                          {OUTCOME_LABELS[slip.outcome]}
+                        </span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatIsoDate(slip.assessed_on, { month: "short", day: "numeric", year: "numeric" })}
+                        {slip.instructor_name ? ` · ${slip.instructor_name}` : ""}
+                        {slip.decided_by_name ? ` · decided by ${slip.decided_by_name}` : ""}
+                      </p>
+                    </Link>
+                    <div className="flex shrink-0 items-center gap-2 print:hidden">
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/personnel/${id}/cbta/${slip.id}/edit`}>Edit</Link>
+                      </Button>
+                      <ConfirmActionButton
+                        onConfirm={deleteCbtaAssessment.bind(null, id, slip.id)}
+                        triggerLabel="Delete"
+                        title="Delete this grade slip?"
+                        description="This can't be undone."
+                        confirmLabel="Delete"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Row 5: Training Records + Alerts */}
       <div className={isPilot ? "grid grid-cols-1 gap-4 xl:grid-cols-2" : "grid grid-cols-1 gap-4"}>
