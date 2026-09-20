@@ -3,15 +3,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NewAccountForm } from "@/components/system/new-account-form";
 import { AccountsList } from "@/components/system/accounts-list";
 import { AuditLogTable } from "@/components/system/audit-log-table";
-import { getAccounts, getAuditLog, getRoles } from "@/lib/system/queries";
+import { getAccounts, getAuditLog, getLinkablePersonnel, getRoles } from "@/lib/system/queries";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 
 export default async function SystemManagementPage() {
-  const [accounts, roles, auditLog, currentProfile] = await Promise.all([
+  const [accounts, roles, auditLog, currentProfile, linkablePersonnel] = await Promise.all([
     getAccounts(),
     getRoles(),
     getAuditLog(100),
     getCurrentProfile(),
+    getLinkablePersonnel(),
   ]);
 
   return (
@@ -37,7 +38,7 @@ export default async function SystemManagementPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <NewAccountForm roles={roles} />
+              <NewAccountForm roles={roles} personnel={linkablePersonnel} />
             </CardContent>
           </Card>
 

@@ -15,6 +15,8 @@ export default async function DashboardLayout({
   // some other way.
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
+  // Examinees only ever see their own exams, never the wing dashboard.
+  if (profile.role_code === "examinee") redirect("/exams");
 
   return (
     <div className="flex min-h-svh flex-col bg-background">

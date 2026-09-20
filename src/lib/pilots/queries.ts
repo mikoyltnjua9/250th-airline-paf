@@ -4,6 +4,7 @@ import { addDaysIso, currentMonthBoundsInManila, formatIsoDate, todayInManila } 
 import {
   aircraftCategoryForPosition,
   effectiveFitness,
+  NON_PILOT_POSITIONS_FILTER,
   type EffectiveFitness,
   type LatestApe,
 } from "@/lib/types/pilot";
@@ -23,7 +24,7 @@ import type {
 
 export type DirectoryRow = Pick<
   Pilot,
-  "id" | "full_name" | "rank_code" | "afsn" | "fit_to_fly" | "photo_url"
+  "id" | "full_name" | "rank_code" | "afsn" | "fit_to_fly" | "photo_url" | "position" | "skill_level"
 > & {
   ranks: { label: string } | null;
   /** Manual flag combined with APE status -- what the badge should show. */
@@ -38,7 +39,7 @@ export async function getPilotDirectory(status: "active" | "inactive" = "active"
   const [pilotsRes, apeRes] = await Promise.all([
     supabase
       .from("pilots")
-      .select("id, full_name, rank_code, afsn, fit_to_fly, photo_url, ranks(label)")
+      .select("id, full_name, rank_code, afsn, fit_to_fly, photo_url, position, skill_level, ranks(label)")
       .eq("active", status === "active")
       .order("full_name"),
     supabase
@@ -81,6 +82,7 @@ export async function getDutyWorkload(windowDays = 30): Promise<WorkloadRow[]> {
       .from("pilots")
       .select("id, full_name, rank_code, ranks(label)")
       .eq("active", true)
+      .not("position", "in", NON_PILOT_POSITIONS_FILTER)
       .order("full_name"),
     supabase.from("flights").select("pilot_id, flying_time_hours").gte("flight_date", sinceIso),
   ]);
@@ -169,7 +171,10 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
       .from("staneval_records")
       .select("*")
       .eq("pilot_id", id)
-      .order("eval_date", { ascending: false }),
+      .order("eval_date", { ascending: false })
+      // Two results on the same day (e.g. a failed exam and its retake) must
+      // still order deterministically: newest entry first.
+      .order("created_at", { ascending: false }),
     supabase
       .from("training_records")
       .select("*")

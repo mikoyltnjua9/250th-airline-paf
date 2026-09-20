@@ -14,7 +14,7 @@ export default async function PersonnelPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Personnel Directory</h1>
-          <p className="text-muted-foreground">{activePilots.length} pilots on record.</p>
+          <p className="text-muted-foreground">{activePilots.length} personnel on record.</p>
         </div>
         <Button asChild>
           <Link href="/personnel/new">Add Pilot</Link>

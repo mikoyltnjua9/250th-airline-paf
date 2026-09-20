@@ -18,7 +18,37 @@ export const POSITIONS = [
   "Rotary Pilot",
   "Ground Crew",
   "Maintenance Officer",
+  "Maintenance Technician",
+  "Flight Attendant",
 ] as const;
+
+export type PersonnelType = "pilot" | "maintenance" | "cabin_crew" | "other";
+
+/**
+ * What kind of person a position is. The app began pilot-only, so anything
+ * unrecognized (old free-text values like "Pilot") stays a pilot rather than
+ * silently dropping out of wing-wide pilot views.
+ */
+export function personnelTypeForPosition(position: string): PersonnelType {
+  if (position === "Maintenance Officer" || position === "Maintenance Technician") return "maintenance";
+  if (position === "Flight Attendant") return "cabin_crew";
+  if (position === "Ground Crew") return "other";
+  return "pilot";
+}
+
+export const NON_PILOT_POSITIONS = [
+  "Ground Crew",
+  "Maintenance Officer",
+  "Maintenance Technician",
+  "Flight Attendant",
+] as const;
+
+/** PostgREST value for `.not("position", "in", ...)` -- keeps non-pilots out
+ * of pilot-only views (alerts, dashboard counts, workload, reports). */
+export const NON_PILOT_POSITIONS_FILTER = `(${NON_PILOT_POSITIONS.map((p) => `"${p}"`).join(",")})`;
+
+export const SKILL_LEVELS = ["3rd", "5th", "7th"] as const;
+export type SkillLevel = (typeof SKILL_LEVELS)[number];
 
 export type Rank = {
   code: string;
@@ -57,6 +87,7 @@ export type Pilot = {
   fit_to_fly: boolean;
   active: boolean;
   public_verify_token: string;
+  skill_level: SkillLevel | null;
   contact_phone: string | null;
   contact_email: string | null;
   created_at: string;

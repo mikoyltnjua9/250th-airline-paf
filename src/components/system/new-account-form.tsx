@@ -7,13 +7,20 @@ import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { createAccount, type CreateAccountState } from "@/app/(dashboard)/system/actions";
-import type { RoleRow } from "@/lib/system/queries";
+import type { LinkablePerson, RoleRow } from "@/lib/system/queries";
 
 const initialState: CreateAccountState = {};
 
-export function NewAccountForm({ roles }: { roles: RoleRow[] }) {
+export function NewAccountForm({
+  roles,
+  personnel,
+}: {
+  roles: RoleRow[];
+  personnel: LinkablePerson[];
+}) {
   const [state, formAction, pending] = useActionState(createAccount, initialState);
   const [formKey, setFormKey] = useState(0);
+  const [role, setRole] = useState(roles[0]?.code ?? "");
 
   if (state.success) {
     return (
@@ -67,7 +74,13 @@ export function NewAccountForm({ roles }: { roles: RoleRow[] }) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="role_code">Role</Label>
-          <NativeSelect id="role_code" name="role_code" defaultValue={roles[0]?.code ?? ""} required>
+          <NativeSelect
+            id="role_code"
+            name="role_code"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            required
+          >
             {roles.map((role) => (
               <option key={role.code} value={role.code}>
                 {role.label}
@@ -75,6 +88,25 @@ export function NewAccountForm({ roles }: { roles: RoleRow[] }) {
             ))}
           </NativeSelect>
         </div>
+        {role === "examinee" && (
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="personnel_id">Person</Label>
+            <NativeSelect id="personnel_id" name="personnel_id" defaultValue="" required>
+              <option value="" disabled>
+                {personnel.length === 0 ? "No one available — add them to the Directory first" : "Select the person this login is for"}
+              </option>
+              {personnel.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </NativeSelect>
+            <p className="text-xs text-muted-foreground">
+              This login can only take the exams assigned to this person — it can&apos;t see
+              anything else in the system.
+            </p>
+          </div>
+        )}
       </div>
       <Button type="submit" disabled={pending}>
         {pending ? "Creating…" : "Create account"}

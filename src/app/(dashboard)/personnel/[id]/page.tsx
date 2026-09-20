@@ -34,6 +34,8 @@ import {
 } from "@/components/status-badge";
 import { getPilotProfile, getDutyStatus } from "@/lib/pilots/queries";
 import { getAlerts } from "@/lib/alerts/queries";
+import { PersonExamsCard } from "@/components/exams/person-exams-card";
+import { getPersonExams, getRecentAttempts } from "@/lib/exams/admin-queries";
 import { deactivatePilot } from "@/app/(dashboard)/personnel/actions";
 import { deleteQualification } from "@/app/(dashboard)/personnel/[id]/qualifications/actions";
 import { deleteCurrencyItem } from "@/app/(dashboard)/personnel/[id]/currency/actions";
@@ -46,6 +48,7 @@ import {
   currencyItemTypesForPosition,
   crewRolesForPosition,
   effectiveFitness,
+  personnelTypeForPosition,
   CURRENCY_ITEM_LABELS,
 } from "@/lib/types/pilot";
 
@@ -88,6 +91,15 @@ export default async function PilotProfilePage({
     crewQualifications,
   } = profile;
 
+  // The pilot-only panels (flying, APE, currency, equipment, crew roles, duty
+  // gauge, fitness) are hidden for maintenance staff, cabin crew and others.
+  const personnelType = personnelTypeForPosition(pilot.position);
+  const isPilot = personnelType === "pilot";
+  // Maintenance staff and cabin crew take written exams; pilots don't.
+  const examData =
+    personnelType === "maintenance" || personnelType === "cabin_crew"
+      ? await Promise.all([getPersonExams(id, personnelType), getRecentAttempts(20, id)])
+      : null;
   const currencyItemTypes = currencyItemTypesForPosition(pilot.position);
   const visibleCrewRoles = crewRolesForPosition(crewRoles, pilot.position);
   const latestApe = apeRecords[0] ?? null;
@@ -128,7 +140,7 @@ export default async function PilotProfilePage({
 
       {/* Row 1: identity + QR, and Duty & Workload */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card className={isPilot ? "lg:col-span-2" : "lg:col-span-3"}>
           <CardContent className="flex flex-col gap-6 sm:flex-row sm:items-start">
             <PilotAvatar
               fullName={pilot.full_name}
@@ -147,7 +159,16 @@ export default async function PilotProfilePage({
                   <p className="text-xs text-muted-foreground">AFSN</p>
                   <p className="font-medium">{pilot.afsn}</p>
                 </div>
-                <FitToFlyBadge fitToFly={fitness.fit} reason={fitness.reason} />
+                {isPilot ? (
+                  <FitToFlyBadge fitToFly={fitness.fit} reason={fitness.reason} />
+                ) : (
+                  pilot.skill_level && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Skill level</p>
+                      <p className="font-medium">{pilot.skill_level} Skill</p>
+                    </div>
+                  )
+                )}
               </div>
               {(pilot.contact_phone || pilot.contact_email) && (
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -168,6 +189,7 @@ export default async function PilotProfilePage({
           </CardContent>
         </Card>
 
+        {isPilot && (
         <Card>
           <CardHeader>
             <CardTitle>Duty &amp; Workload Status</CardTitle>
@@ -176,9 +198,21 @@ export default async function PilotProfilePage({
             <DutyGauge status={dutyStatus} />
           </CardContent>
         </Card>
+        )}
       </div>
 
+      {examData && (
+        <PersonExamsCard
+          personnelId={id}
+          assigned={examData[0].assigned}
+          assignable={examData[0].assignable}
+          hasLogin={examData[0].hasLogin}
+          history={examData[1]}
+        />
+      )}
+
       {/* Row 2: Authorized Equipment + Qualification Status (crew role) */}
+      {isPilot && (
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex items-center justify-between">
@@ -246,8 +280,10 @@ export default async function PilotProfilePage({
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Row 3: Flying Hours + APE Status */}
+      {isPilot && (
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader className="flex items-center justify-between">
@@ -407,9 +443,11 @@ export default async function PilotProfilePage({
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Row 4: Currency Status + StanEval & Check */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className={isPilot ? "grid grid-cols-1 gap-4 xl:grid-cols-2" : "grid grid-cols-1 gap-4"}>
+        {isPilot && (
         <Card>
           <CardHeader>
             <CardTitle>Currency Status</CardTitle>
@@ -454,6 +492,7 @@ export default async function PilotProfilePage({
             </div>
           </CardContent>
         </Card>
+        )}
 
         <Card>
           <CardHeader className="flex items-center justify-between">
@@ -512,7 +551,7 @@ export default async function PilotProfilePage({
       </div>
 
       {/* Row 5: Training Records + Alerts */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className={isPilot ? "grid grid-cols-1 gap-4 xl:grid-cols-2" : "grid grid-cols-1 gap-4"}>
         <Card>
           <CardHeader className="flex items-center justify-between">
             <div>
@@ -561,7 +600,7 @@ export default async function PilotProfilePage({
           </CardContent>
         </Card>
 
-        <AlertsCard alerts={pilotAlerts} />
+        {isPilot && <AlertsCard alerts={pilotAlerts} />}
       </div>
 
       {/* Quick Actions */}

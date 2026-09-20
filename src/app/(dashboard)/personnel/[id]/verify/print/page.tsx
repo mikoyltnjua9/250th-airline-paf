@@ -6,7 +6,7 @@ import { VerifyQr } from "@/components/pilots/verify-qr";
 import { FitToFlyBadge } from "@/components/status-badge";
 import { PrintButton } from "@/components/reports/print-button";
 import { getPilotProfile } from "@/lib/pilots/queries";
-import { effectiveFitness } from "@/lib/types/pilot";
+import { effectiveFitness, personnelTypeForPosition } from "@/lib/types/pilot";
 
 export default async function PrintIdCardPage({
   params,
@@ -59,7 +59,7 @@ export default async function PrintIdCardPage({
                 <p className="text-xs text-muted-foreground">AFSN</p>
                 <p className="font-medium">{pilot.afsn}</p>
               </div>
-              <FitToFlyBadge fitToFly={fitness.fit} />
+              {personnelTypeForPosition(pilot.position) === "pilot" && <FitToFlyBadge fitToFly={fitness.fit} />}
             </div>
           </div>
           <VerifyQr token={pilot.public_verify_token} />

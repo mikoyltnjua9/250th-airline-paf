@@ -5,7 +5,7 @@ import { PilotAvatar } from "@/components/pilots/pilot-avatar";
 import { FitToFlyBadge } from "@/components/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { effectiveFitness } from "@/lib/types/pilot";
+import { effectiveFitness, personnelTypeForPosition } from "@/lib/types/pilot";
 
 // Never index a page that names a real person, even minimally.
 export const metadata: Metadata = {
@@ -18,7 +18,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 type VerifyResult = {
   fullName: string;
   rankLabel: string;
-  fitToFly: boolean;
+  /** null for non-pilots -- fit-to-fly isn't a concept for them. */
+  fitToFly: boolean | null;
   photoUrl: string | null;
 };
 
@@ -55,7 +56,7 @@ async function queryPilot(token: string): Promise<LookupOutcome> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("pilots")
-    .select("id, full_name, rank_code, fit_to_fly, photo_url, ranks(label)")
+    .select("id, full_name, rank_code, position, fit_to_fly, photo_url, ranks(label)")
     .eq("public_verify_token", token)
     .maybeSingle();
 
@@ -82,7 +83,10 @@ async function queryPilot(token: string): Promise<LookupOutcome> {
     result: {
       fullName: data.full_name,
       rankLabel: ranks?.label ?? data.rank_code,
-      fitToFly: effectiveFitness(data.fit_to_fly, ape).fit,
+      fitToFly:
+        personnelTypeForPosition(data.position) === "pilot"
+          ? effectiveFitness(data.fit_to_fly, ape).fit
+          : null,
       photoUrl: data.photo_url,
     },
   };
@@ -121,7 +125,9 @@ export default async function VerifyPage({
                 <p className="text-lg font-semibold">
                   {outcome.result.rankLabel} {outcome.result.fullName}
                 </p>
-                <FitToFlyBadge fitToFly={outcome.result.fitToFly} />
+                {outcome.result.fitToFly !== null && (
+                  <FitToFlyBadge fitToFly={outcome.result.fitToFly} />
+                )}
               </div>
             ) : outcome.kind === "unavailable" ? (
               <div className="space-y-2 py-4 text-center">

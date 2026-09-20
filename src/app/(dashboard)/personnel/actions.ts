@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
-import { POSITIONS } from "@/lib/types/pilot";
+import { POSITIONS, SKILL_LEVELS } from "@/lib/types/pilot";
 
 const pilotFormSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required"),
@@ -13,6 +13,10 @@ const pilotFormSchema = z.object({
   afsn: z.string().trim().min(1, "AFSN is required"),
   position: z.enum(POSITIONS),
   fit_to_fly: z.enum(["true", "false"]).transform((v) => v === "true"),
+  skill_level: z
+    .enum(["", ...SKILL_LEVELS])
+    .optional()
+    .transform((v) => v || null),
   contact_phone: z
     .string()
     .trim()

@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PilotAvatar } from "@/components/pilots/pilot-avatar";
 import { FitToFlyBadge } from "@/components/status-badge";
 import { ReactivatePilotButton } from "@/components/pilots/reactivate-pilot-button";
+import { Badge } from "@/components/ui/badge";
+import { personnelTypeForPosition } from "@/lib/types/pilot";
 import type { DirectoryRow } from "@/lib/pilots/queries";
 
 function matchesSearch(pilot: DirectoryRow, query: string): boolean {
@@ -15,6 +17,7 @@ function matchesSearch(pilot: DirectoryRow, query: string): boolean {
   return (
     pilot.full_name.toLowerCase().includes(query) ||
     pilot.afsn.toLowerCase().includes(query) ||
+    pilot.position.toLowerCase().includes(query) ||
     rankLabel.toLowerCase().includes(query)
   );
 }
@@ -62,7 +65,15 @@ function PilotList({
           {showReactivate ? (
             <ReactivatePilotButton pilotId={pilot.id} />
           ) : (
-            <FitToFlyBadge fitToFly={pilot.fitness.fit} reason={pilot.fitness.reason} />
+            personnelTypeForPosition(pilot.position) === "pilot" ? (
+              <FitToFlyBadge fitToFly={pilot.fitness.fit} reason={pilot.fitness.reason} />
+            ) : (
+              // Fit-to-fly is a pilot concept -- show what the person is instead.
+              <Badge variant="secondary">
+                {pilot.position}
+                {pilot.skill_level ? ` · ${pilot.skill_level} Skill` : ""}
+              </Badge>
+            )
           )}
         </Link>
       ))}
@@ -92,7 +103,7 @@ export function PersonnelDirectory({
   return (
     <div className="space-y-4">
       <Input
-        placeholder="Search by name, rank, or AFSN…"
+        placeholder="Search by name, rank, AFSN, or position…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="max-w-sm"

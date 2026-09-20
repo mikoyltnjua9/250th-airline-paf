@@ -6,11 +6,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generatePassword } from "@/lib/auth/generate-password";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { hasPermission } from "@/lib/permissions";
+import { personnelTypeForPosition } from "@/lib/types/pilot";
 
 const createAccountSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required"),
   email: z.string().trim().email("Enter a valid email address"),
   role_code: z.string().trim().min(1, "Role is required"),
+  personnel_id: z.string().trim().optional(),
 });
 
 /**
@@ -53,11 +55,32 @@ export async function createAccount(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const { full_name, email, role_code } = parsed.data;
-  const password = generatePassword();
+  const { full_name, email, role_code, personnel_id } = parsed.data;
   const admin = createAdminClient();
 
-  const { error } = await admin.auth.admin.createUser({
+  // An examinee login exists to take exams for ONE personnel record, so it
+  // must be linked to one (and only staff who take exams qualify).
+  if (role_code === "examinee") {
+    if (!personnel_id) return { error: "Choose the person this login is for." };
+    const { data: person } = await admin
+      .from("pilots")
+      .select("position")
+      .eq("id", personnel_id)
+      .maybeSingle();
+    if (!person || personnelTypeForPosition(person.position) === "pilot") {
+      return { error: "Examinee logins are for maintenance staff and cabin crew." };
+    }
+    const { data: existing } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("personnel_id", personnel_id)
+      .maybeSingle();
+    if (existing) return { error: "That person already has a login." };
+  }
+
+  const password = generatePassword();
+
+  const { data: created, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
@@ -69,6 +92,18 @@ export async function createAccount(
       ? "That email is already in use."
       : error.message;
     return { error: message };
+  }
+
+  if (role_code === "examinee") {
+    const { error: linkError } = await admin
+      .from("profiles")
+      .update({ personnel_id })
+      .eq("id", created.user.id);
+    if (linkError) {
+      // Don't leave behind a login that isn't tied to anyone.
+      await admin.auth.admin.deleteUser(created.user.id);
+      return { error: "Couldn't link that login to the person: " + linkError.message };
+    }
   }
 
   revalidatePath("/system");

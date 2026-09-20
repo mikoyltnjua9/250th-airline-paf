@@ -7,10 +7,11 @@
  * call site needs to change.
  */
 
-export type RoleCode = "super_admin";
+export type RoleCode = "super_admin" | "examinee";
 
 export const ROLE_LABELS: Record<RoleCode, string> = {
   super_admin: "Super Admin",
+  examinee: "Examinee",
 };
 
 export type Permission =
@@ -30,12 +31,17 @@ export type Permission =
   | "staneval:manage"
   | "training:view"
   | "training:manage"
+  | "exams:take"
+  | "exams:manage"
   | "users:manage"
   | "audit_log:view";
 
 /** "*" = every permission. Used only by super_admin in v1. */
 const ROLE_PERMISSIONS: Record<RoleCode, Permission[] | "*"> = {
   super_admin: "*",
+  // Deliberately narrow: an examinee can take their own assigned exams and
+  // nothing else -- no view of any pilot, personnel or safety data.
+  examinee: ["exams:take"],
 };
 
 export function hasPermission(

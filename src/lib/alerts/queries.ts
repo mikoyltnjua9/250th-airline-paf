@@ -5,6 +5,7 @@ import {
   currencyExpiryDate,
   currencyItemTypesForPosition,
   effectiveFitness,
+  NON_PILOT_POSITIONS_FILTER,
   CURRENCY_ITEM_LABELS,
   type CurrencyItemType,
   type QualificationStatus,
@@ -53,6 +54,7 @@ export async function getAlerts(): Promise<Alert[]> {
       .from("pilots")
       .select("id, full_name, rank_code, position, fit_to_fly, ranks(label)")
       .eq("active", true)
+      .not("position", "in", NON_PILOT_POSITIONS_FILTER)
       .order("full_name"),
     supabase
       .from("qualifications")
@@ -65,7 +67,10 @@ export async function getAlerts(): Promise<Alert[]> {
     supabase
       .from("staneval_records")
       .select("pilot_id, next_due_date")
-      .order("eval_date", { ascending: false }),
+      .order("eval_date", { ascending: false })
+      // Two results on the same day (e.g. a failed exam and its retake) must
+      // still order deterministically: newest entry first.
+      .order("created_at", { ascending: false }),
   ]);
 
   if (pilotsRes.error) throw pilotsRes.error;

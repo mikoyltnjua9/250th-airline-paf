@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PilotAvatar } from "@/components/pilots/pilot-avatar";
-import { POSITIONS, type Rank } from "@/lib/types/pilot";
+import { POSITIONS, SKILL_LEVELS, type Rank } from "@/lib/types/pilot";
 
 export type PilotFormDefaults = Partial<{
   full_name: string;
@@ -12,6 +12,7 @@ export type PilotFormDefaults = Partial<{
   afsn: string;
   position: string;
   fit_to_fly: string;
+  skill_level: string;
   contact_phone: string;
   contact_email: string;
 }>;
@@ -123,7 +124,7 @@ export function PilotForm({
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="fit_to_fly">Fitness</Label>
+            <Label htmlFor="fit_to_fly">Fitness (pilots)</Label>
             <NativeSelect
               id="fit_to_fly"
               name="fit_to_fly"
@@ -132,6 +133,21 @@ export function PilotForm({
             >
               <option value="true">Fit to Fly</option>
               <option value="false">Unfit to Fly</option>
+            </NativeSelect>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="skill_level">Skill level (maintenance)</Label>
+            <NativeSelect
+              id="skill_level"
+              name="skill_level"
+              defaultValue={defaultValues?.skill_level ?? ""}
+            >
+              <option value="">Not applicable</option>
+              {SKILL_LEVELS.map((level) => (
+                <option key={level} value={level}>
+                  {level} Skill
+                </option>
+              ))}
             </NativeSelect>
           </div>
           <div className="space-y-2">

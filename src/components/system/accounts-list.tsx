@@ -34,6 +34,7 @@ export function AccountsList({
             <p className="truncate font-medium">{account.fullName}</p>
             <p className="truncate text-sm text-muted-foreground">
               {account.email ?? "—"} · Added {formatDate(account.createdAt)}
+              {account.personnelName ? ` · For ${account.personnelName}` : ""}
             </p>
           </div>
           <Badge variant="secondary" className="shrink-0">

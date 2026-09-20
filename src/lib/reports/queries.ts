@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getAlerts } from "@/lib/alerts/queries";
 import {
+  NON_PILOT_POSITIONS_FILTER,
   currencyExpiryDate,
   currencyItemTypesForPosition,
   effectiveFitness,
@@ -68,6 +69,7 @@ async function rosterRows(): Promise<ReportRow[]> {
       .from("pilots")
       .select("id, full_name, afsn, position, rank_code, fit_to_fly, ranks(label)")
       .eq("active", true)
+      .not("position", "in", NON_PILOT_POSITIONS_FILTER)
       .order("full_name"),
     supabase
       .from("ape_records")
@@ -234,6 +236,7 @@ async function flyingHoursRows(): Promise<ReportRow[]> {
       .from("pilots")
       .select("id, full_name, rank_code, ranks(label)")
       .eq("active", true)
+      .not("position", "in", NON_PILOT_POSITIONS_FILTER)
       .order("full_name"),
     supabase.from("flights").select("pilot_id, flying_time_hours"),
   ]);

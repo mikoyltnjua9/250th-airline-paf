@@ -4,6 +4,7 @@ import { getAlerts, EXPIRING_SOON_THRESHOLD_DAYS, type Alert, type AlertCategory
 import {
   currencyStatus,
   currencyItemTypesForPosition,
+  NON_PILOT_POSITIONS_FILTER,
   CURRENCY_ITEM_LABELS,
   type CurrencyItemType,
   type QualificationStatus,
@@ -45,7 +46,11 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
   const supabase = await createClient();
 
   const [pilotsRes, qualsRes, aircraftTypesRes, currencyRes, alerts] = await Promise.all([
-    supabase.from("pilots").select("id, position").eq("active", true),
+    supabase
+      .from("pilots")
+      .select("id, position")
+      .eq("active", true)
+      .not("position", "in", NON_PILOT_POSITIONS_FILTER),
     supabase.from("qualifications").select("pilot_id, status, aircraft_type_code"),
     // Retired aircraft (Fokker F28, N-22B Nomad) stay out of the wing-wide summary.
     supabase.from("aircraft_types").select("code, label").eq("active", true).order("sort_order"),

@@ -50,6 +50,7 @@ export default async function EditPilotPage({
                 afsn: pilot.afsn,
                 position: pilot.position,
                 fit_to_fly: String(pilot.fit_to_fly),
+                skill_level: pilot.skill_level ?? "",
                 contact_phone: pilot.contact_phone ?? "",
                 contact_email: pilot.contact_email ?? "",
               }

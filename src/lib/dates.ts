@@ -61,3 +61,11 @@ export function formatIsoDate(
     timeZone: "UTC",
   });
 }
+
+/** Formats a full timestamp (e.g. submitted_at) as a Manila calendar date. */
+export function formatManilaDate(
+  timestamp: string,
+  options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" },
+): string {
+  return new Date(timestamp).toLocaleDateString("en-US", { ...options, timeZone: APP_TIME_ZONE });
+}
