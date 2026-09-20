@@ -69,3 +69,8 @@ export function formatManilaDate(
 ): string {
   return new Date(timestamp).toLocaleDateString("en-US", { ...options, timeZone: APP_TIME_ZONE });
 }
+
+/** The Manila calendar date (YYYY-MM-DD) of a full timestamp. */
+export function manilaDateOf(timestamp: string): string {
+  return todayInManila(new Date(timestamp));
+}

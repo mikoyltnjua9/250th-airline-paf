@@ -9,15 +9,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getExamSetsOverview, getHeldQuestions, getRecentAttempts } from "@/lib/exams/admin-queries";
+import {
+  getDueForRetake,
+  getExamSetsOverview,
+  getHeldQuestions,
+  getRecentAttempts,
+} from "@/lib/exams/admin-queries";
 import { formatManilaDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export default async function ExamManagementPage() {
-  const [sets, held, recent] = await Promise.all([
+  const [sets, held, recent, due] = await Promise.all([
     getExamSetsOverview(),
     getHeldQuestions(),
     getRecentAttempts(30),
+    getDueForRetake(),
   ]);
 
   const heldBySet = new Map<string, typeof held>();
@@ -36,6 +42,40 @@ export default async function ExamManagementPage() {
           staff and cabin crew from their profile in the Personnel Directory.
         </p>
       </div>
+
+      {due.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Due for retake</CardTitle>
+            <CardDescription>
+              Exams are taken weekly. These passed more than a week ago and haven&apos;t been taken
+              again — longest overdue first.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            {due.map((d) => (
+              <div
+                key={d.personnelId + d.examTitle + (d.skillLevel ?? "")}
+                className="flex items-center justify-between gap-2 text-sm"
+              >
+                <span className="min-w-0 truncate">
+                  <Link href={`/personnel/${d.personnelId}`} className="font-medium hover:underline">
+                    {d.personName}
+                  </Link>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · {d.examTitle}
+                    {d.skillLevel ? ` (${d.skillLevel})` : ""}
+                  </span>
+                </span>
+                <span className="shrink-0 font-medium tabular-nums text-amber-600 dark:text-amber-400">
+                  {d.daysOverdue} day{d.daysOverdue === 1 ? "" : "s"} overdue
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

@@ -1,8 +1,10 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SkillLevel } from "@/lib/types/pilot";
+import { addDaysIso, daysUntilDate, manilaDateOf } from "@/lib/dates";
+import { EXAM_CYCLE_DAYS } from "@/lib/exams/cycle";
 
-export type ExamStatus = "not_started" | "in_progress" | "failed" | "passed";
+export type ExamStatus = "not_started" | "in_progress" | "failed" | "passed" | "due";
 
 export type AssignedExam = {
   examSetId: string;
@@ -15,6 +17,10 @@ export type AssignedExam = {
   lastAttemptId: string | null;
   lastPercent: number | null;
   attemptCount: number;
+  /** For a passed exam: the date it can be taken again (YYYY-MM-DD). */
+  availableOn: string | null;
+  /** For a due exam: days since it came due. */
+  daysOverdue: number | null;
 };
 
 type AttemptRow = {
@@ -28,12 +34,13 @@ type AttemptRow = {
 
 /**
  * Status of one assignment. Only attempts made since the assignment was last
- * (re)issued count, so an admin re-assigning an exam (e.g. an annual
- * re-check) starts the person fresh instead of leaving them locked at last
- * year's pass.
- *   passed       -> locked until re-assigned
+ * (re)issued count, so an admin resetting an exam starts the person fresh.
+ *   passed       -> passed within the last EXAM_CYCLE_DAYS (weekly): locked
+ *                   until availableOn
  *   in_progress  -> an unsubmitted attempt exists; they resume it
  *   failed       -> the latest attempt failed; they may retake
+ *   due          -> last passed more than a cycle ago and nothing since:
+ *                   time to take it again (daysOverdue = days past due)
  */
 export function examStatus(assignedAt: string, attempts: AttemptRow[]) {
   const mine = attempts
@@ -41,17 +48,32 @@ export function examStatus(assignedAt: string, attempts: AttemptRow[]) {
     .sort((a, b) => (a.started_at < b.started_at ? 1 : -1)); // newest first
   const open = mine.find((a) => !a.submitted_at) ?? null;
   const submitted = mine.filter((a) => a.submitted_at);
-  let status: ExamStatus = "not_started";
-  if (submitted.some((a) => a.passed)) status = "passed";
-  else if (open) status = "in_progress";
-  else if (submitted.length > 0) status = "failed";
   const last = submitted[0] ?? null;
+
+  const latestPass = submitted.find((a) => a.passed) ?? null;
+  const availableOn = latestPass
+    ? addDaysIso(manilaDateOf(latestPass.submitted_at!), EXAM_CYCLE_DAYS)
+    : null;
+  const passLocks = !!availableOn && daysUntilDate(availableOn) > 0;
+
+  let status: ExamStatus = "not_started";
+  let daysOverdue: number | null = null;
+  if (passLocks) status = "passed";
+  else if (open) status = "in_progress";
+  else if (last && !last.passed) status = "failed";
+  else if (latestPass && availableOn) {
+    status = "due";
+    daysOverdue = -daysUntilDate(availableOn);
+  }
+
   return {
     status,
     openAttemptId: open?.id ?? null,
     lastAttemptId: last?.id ?? null,
     lastPercent: last?.percent != null ? Number(last.percent) : null,
     attemptCount: submitted.length,
+    availableOn: status === "passed" ? availableOn : null,
+    daysOverdue,
   };
 }
 

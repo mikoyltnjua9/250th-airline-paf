@@ -6,19 +6,21 @@ import { cn } from "@/lib/utils";
 import { assignExam, reassignExam, unassignExam } from "@/app/(dashboard)/personnel/[id]/exams/actions";
 import type { AssignableExam, PersonExam, RecentAttempt } from "@/lib/exams/admin-queries";
 import type { ExamStatus } from "@/lib/exams/queries";
-import { formatManilaDate } from "@/lib/dates";
+import { formatIsoDate, formatManilaDate } from "@/lib/dates";
 
 const STATUS_LABEL: Record<ExamStatus, string> = {
   not_started: "Not started",
   in_progress: "In progress",
   failed: "Not passed",
   passed: "Passed",
+  due: "Due again",
 };
 const STATUS_STYLE: Record<ExamStatus, string> = {
   not_started: "bg-muted text-muted-foreground",
   in_progress: "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300",
   failed: "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300",
   passed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
+  due: "bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-300",
 };
 
 /** "Written Exams" on a maintenance / cabin-crew profile: assign exams, see
@@ -78,6 +80,12 @@ export function PersonExamsCard({
                     {exam.category}
                     {exam.skillLevel ? ` · ${exam.skillLevel} Skill` : ""}
                     {exam.lastPercent !== null ? ` · Last score ${exam.lastPercent}%` : ""}
+                    {exam.availableOn
+                      ? ` · Available again ${formatIsoDate(exam.availableOn, { month: "short", day: "numeric" })}`
+                      : ""}
+                    {exam.status === "due" && exam.daysOverdue
+                      ? ` · Due ${exam.daysOverdue} day${exam.daysOverdue === 1 ? "" : "s"} ago`
+                      : ""}
                     {exam.attemptCount > 0
                       ? ` · ${exam.attemptCount} attempt${exam.attemptCount === 1 ? "" : "s"}`
                       : ""}
@@ -88,7 +96,7 @@ export function PersonExamsCard({
                     onConfirm={reassignExam.bind(null, personnelId, exam.examSetId)}
                     triggerLabel="Reset"
                     title="Reset this exam?"
-                    description="Starts them fresh: a previous pass no longer locks the exam and earlier fails no longer count. Past attempts and their StanEval records stay on file."
+                    description="Reopens the exam right now, without waiting for the weekly cycle: a recent pass stops locking it and earlier fails no longer count. Past attempts and their StanEval records stay on file."
                     confirmLabel="Reset"
                     confirmVariant="default"
                   />

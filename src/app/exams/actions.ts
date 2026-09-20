@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getExaminee } from "@/lib/exams/session";
 import { examStatus } from "@/lib/exams/queries";
-import { todayInManila } from "@/lib/dates";
+import { addDaysIso, todayInManila } from "@/lib/dates";
+import { EXAM_CYCLE_DAYS } from "@/lib/exams/cycle";
 
 /**
  * Every action here runs on the server with the service-role client, because
@@ -52,8 +53,9 @@ export async function startExam(examSetId: string) {
     .eq("exam_set_id", examSetId);
   const status = examStatus(assignment.assigned_at, attempts ?? []);
 
-  // A pass locks the exam until an admin re-assigns it; an unfinished attempt
-  // is resumed rather than restarted (so a refresh or timeout loses nothing).
+  // A pass locks the exam for the rest of the weekly cycle; an unfinished
+  // attempt is resumed rather than restarted (so a refresh or timeout loses
+  // nothing).
   if (status.status === "passed") redirect("/exams");
   if (status.openAttemptId) redirect(`/exams/${status.openAttemptId}`);
 
@@ -166,6 +168,9 @@ export async function submitExam(attemptId: string) {
       eval_date: todayInManila(),
       status: passed ? "pass" : "fail",
       grading,
+      // A pass covers the weekly cycle, so the next one is due a week out; a
+      // fail has no due date (they can retake straight away).
+      next_due_date: passed ? addDaysIso(todayInManila(), EXAM_CYCLE_DAYS) : null,
       created_by: me.userId,
       updated_by: me.userId,
     })

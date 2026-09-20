@@ -5,12 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { requireExaminee } from "@/lib/exams/session";
 import { getMyExams, type ExamStatus } from "@/lib/exams/queries";
 import { startExam } from "@/app/exams/actions";
+import { formatIsoDate } from "@/lib/dates";
 
 const STATUS_LABEL: Record<ExamStatus, string> = {
   not_started: "Not started",
   in_progress: "In progress",
   failed: "Not passed",
   passed: "Passed",
+  due: "Due again",
 };
 
 const STATUS_STYLE: Record<ExamStatus, string> = {
@@ -18,6 +20,7 @@ const STATUS_STYLE: Record<ExamStatus, string> = {
   in_progress: "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300",
   failed: "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300",
   passed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
+  due: "bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-300",
 };
 
 export default async function MyExamsPage() {
@@ -29,7 +32,8 @@ export default async function MyExamsPage() {
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">My exams</h2>
         <p className="text-muted-foreground">
-          Exams assigned to you. The pass mark is 85%. If you don&apos;t pass, you can retake it.
+          Exams assigned to you. The pass mark is 85%. Each exam is taken weekly; if you don&apos;t
+          pass, you can retake it straight away.
         </p>
       </div>
 
@@ -54,6 +58,12 @@ export default async function MyExamsPage() {
                     {exam.skillLevel ? ` · ${exam.skillLevel} Skill` : ""} · Pass mark {exam.passMark}%
                     {exam.lastPercent !== null && exam.status !== "in_progress"
                       ? ` · Last score ${exam.lastPercent}%`
+                      : ""}
+                    {exam.availableOn
+                      ? ` · Available again ${formatIsoDate(exam.availableOn, { weekday: "long", month: "short", day: "numeric" })}`
+                      : ""}
+                    {exam.status === "due" && exam.daysOverdue
+                      ? ` · Due ${exam.daysOverdue} day${exam.daysOverdue === 1 ? "" : "s"} ago`
                       : ""}
                     {exam.attemptCount > 0
                       ? ` · ${exam.attemptCount} attempt${exam.attemptCount === 1 ? "" : "s"}`

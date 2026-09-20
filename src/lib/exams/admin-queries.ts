@@ -170,6 +170,8 @@ export type PersonExam = {
   lastPercent: number | null;
   attemptCount: number;
   assignedAt: string;
+  availableOn: string | null;
+  daysOverdue: number | null;
 };
 
 export type AssignableExam = { id: string; label: string };
@@ -227,6 +229,8 @@ export async function getPersonExams(personnelId: string, type: PersonnelType) {
         lastPercent: s.lastPercent,
         attemptCount: s.attemptCount,
         assignedAt: a.assigned_at,
+        availableOn: s.availableOn,
+        daysOverdue: s.daysOverdue,
       };
     })
     .sort((a, b) => a.title.localeCompare(b.title));
@@ -240,4 +244,61 @@ export async function getPersonExams(personnelId: string, type: PersonnelType) {
     }));
 
   return { assigned, assignable, hasLogin: !!accountRes.data };
+}
+
+export type DueExam = {
+  personnelId: string;
+  personName: string;
+  examTitle: string;
+  skillLevel: SkillLevel | null;
+  daysOverdue: number;
+};
+
+/** Everyone whose weekly exam has come due again and hasn't been retaken. */
+export async function getDueForRetake(): Promise<DueExam[]> {
+  const supabase = await createClient();
+  const [assignRes, attemptRes] = await Promise.all([
+    supabase
+      .from("exam_assignments")
+      .select("personnel_id, exam_set_id, assigned_at, pilots(full_name, active), exam_sets(title, skill_level, active)"),
+    supabase
+      .from("exam_attempts")
+      .select("id, personnel_id, exam_set_id, started_at, submitted_at, percent, passed"),
+  ]);
+  if (assignRes.error) throw assignRes.error;
+  if (attemptRes.error) throw attemptRes.error;
+  const attempts = (attemptRes.data ?? []) as {
+    id: string;
+    personnel_id: string;
+    exam_set_id: string;
+    started_at: string;
+    submitted_at: string | null;
+    percent: number | null;
+    passed: boolean | null;
+  }[];
+  type A = {
+    personnel_id: string;
+    exam_set_id: string;
+    assigned_at: string;
+    pilots: { full_name: string; active: boolean } | null;
+    exam_sets: { title: string; skill_level: SkillLevel | null; active: boolean } | null;
+  };
+  const due: DueExam[] = [];
+  for (const a of (assignRes.data ?? []) as unknown as A[]) {
+    if (!a.pilots?.active || !a.exam_sets?.active) continue;
+    const s = examStatus(
+      a.assigned_at,
+      attempts.filter((x) => x.personnel_id === a.personnel_id && x.exam_set_id === a.exam_set_id),
+    );
+    if (s.status === "due" && s.daysOverdue !== null) {
+      due.push({
+        personnelId: a.personnel_id,
+        personName: a.pilots.full_name,
+        examTitle: a.exam_sets.title,
+        skillLevel: a.exam_sets.skill_level,
+        daysOverdue: s.daysOverdue,
+      });
+    }
+  }
+  return due.sort((x, y) => y.daysOverdue - x.daysOverdue || x.personName.localeCompare(y.personName));
 }
