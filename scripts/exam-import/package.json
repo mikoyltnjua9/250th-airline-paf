@@ -4,6 +4,7 @@
   "description": "Offline tool: parses the client's exam files (exams/ folder, git-ignored) and loads them into Supabase. Its own dependencies keep the spreadsheet/Word readers out of the app.",
   "dependencies": {
     "mammoth": "^1.8.0",
+    "pdfjs-dist": "^4.10.38",
     "xlsx": "^0.18.5"
   }
 }

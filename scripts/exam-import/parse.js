@@ -99,6 +99,7 @@ function parseFlightAttendant(file) {
 function finalize(questions, { boldSet, sourceHasKeys }) {
   return questions.map((q, i) => {
     const issues = [...(q.issues || [])];
+    let wordAnswer = null; // what the Word file says, when it disagrees with the sheet
     let keys = q.options.filter((o) => o.isKey).length;
     // No key in the sheet: derive it from the Word file's bold text, if exactly one option matches.
     if (!sourceHasKeys && boldSet) {
@@ -112,14 +113,17 @@ function finalize(questions, { boldSet, sourceHasKeys }) {
       // Cross-check: the key option should also be bold in the Word file. Only complain when
       // *another* option is bold instead (a real disagreement, not a formatting gap).
       const others = q.options.filter((o) => !o.isKey && boldSet.has(norm(o.body)));
-      if (!boldSet.has(norm(key.body)) && others.length === 1) issues.push('spreadsheet and Word file disagree on the correct answer');
+      if (!boldSet.has(norm(key.body)) && others.length === 1) {
+        issues.push('spreadsheet and Word file disagree on the correct answer');
+        wordAnswer = others[0].body;
+      }
     }
     if (q.options.length < 2) issues.push('fewer than 2 options');
     if (q.options.length > 5) issues.push('more than 5 options (likely merged questions)');
     if (keys === 0) issues.push('no correct answer marked');
     if (keys > 1) issues.push('more than one correct answer marked');
     if (!q.body) issues.push('empty question text');
-    return { position: i + 1, body: q.body, reference: q.reference || null, options: q.options, status: issues.length ? 'needs_review' : 'ok', review_note: issues.join('; ') || null };
+    return { position: i + 1, body: q.body, reference: q.reference || null, wordAnswer, options: q.options, status: issues.length ? 'needs_review' : 'ok', review_note: issues.join('; ') || null };
   });
 }
 
