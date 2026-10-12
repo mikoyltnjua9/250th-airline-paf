@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { hasPermission } from "@/lib/permissions";
 import { personnelTypeForPosition } from "@/lib/types/pilot";
+import { examAudienceFor } from "@/lib/exams/audience";
 
 async function requireExamsManage() {
   const profile = await getCurrentProfile();
@@ -33,8 +34,16 @@ export async function assignExam(formData: FormData) {
     .select("position")
     .eq("id", personnelId)
     .maybeSingle();
-  if (!person || personnelTypeForPosition(person.position) === "pilot") {
-    throw new Error("Written exams are for maintenance staff and cabin crew.");
+  if (!person) throw new Error("Person not found.");
+  // Each exam is written for one kind of person (pilots, maintenance, cabin
+  // crew); the page only offers the right ones, this stops a crafted request.
+  const { data: examSet } = await supabase
+    .from("exam_sets")
+    .select("audience")
+    .eq("id", examSetId)
+    .maybeSingle();
+  if (!examSet || examSet.audience !== examAudienceFor(personnelTypeForPosition(person.position))) {
+    throw new Error("That exam isn't for this person's role.");
   }
 
   await reissue(personnelId, examSetId);

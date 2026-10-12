@@ -59,7 +59,7 @@ export async function createAccount(
   const admin = createAdminClient();
 
   // An examinee login exists to take exams for ONE personnel record, so it
-  // must be linked to one (and only staff who take exams qualify).
+  // must be linked to one.
   if (role_code === "examinee") {
     if (!personnel_id) return { error: "Choose the person this login is for." };
     const { data: person } = await admin
@@ -67,8 +67,8 @@ export async function createAccount(
       .select("position")
       .eq("id", personnel_id)
       .maybeSingle();
-    if (!person || personnelTypeForPosition(person.position) === "pilot") {
-      return { error: "Examinee logins are for maintenance staff and cabin crew." };
+    if (!person || personnelTypeForPosition(person.position) === "other") {
+      return { error: "Examinee logins are for pilots, maintenance staff and cabin crew." };
     }
     const { data: existing } = await admin
       .from("profiles")

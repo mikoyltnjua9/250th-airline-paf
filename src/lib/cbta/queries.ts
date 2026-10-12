@@ -25,6 +25,11 @@ export type CbtaAssessment = {
   developmental_remarks: string | null;
   summary: string | null;
   student_concurrence: boolean;
+  /** PNG data URLs drawn on the signature pad; null when unsigned. */
+  instructor_signature: string | null;
+  instructor_signed_at: string | null;
+  student_signature: string | null;
+  student_signed_at: string | null;
   trainee_competent: boolean;
   outcome: CbtaOutcome;
   decided_by_name: string | null;

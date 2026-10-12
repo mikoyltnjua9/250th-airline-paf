@@ -15,27 +15,34 @@ export default async function CurrencyItemPage({
   searchParams,
 }: {
   params: Promise<{ id: string; itemType: string }>;
-  searchParams: Promise<{ error?: string; values?: string }>;
+  searchParams: Promise<{ error?: string; values?: string; aircraft?: string }>;
 }) {
   const { id, itemType } = await params;
-  const { error, values } = await searchParams;
+  const { error, values, aircraft } = await searchParams;
   const preserved = parsePreservedValues(values);
+  // After a failed save the aircraft comes back with the preserved values.
+  const aircraftCode = (aircraft ?? preserved?.aircraft_type_code ?? "") || null;
 
   if (!VALID_ITEM_TYPES.includes(itemType as CurrencyItemType)) notFound();
   const validItemType = itemType as CurrencyItemType;
 
   const [profile, item] = await Promise.all([
     getPilotProfile(id),
-    getCurrencyItem(id, validItemType),
+    getCurrencyItem(id, validItemType, aircraftCode),
   ]);
 
   if (!profile) notFound();
+  const aircraftLabel = aircraftCode
+    ? (profile.qualifications.find((q) => q.aircraft_type_code === aircraftCode)?.aircraft_types?.label ??
+      aircraftCode)
+    : null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">
           {CURRENCY_ITEM_LABELS[validItemType]}
+          {aircraftLabel ? ` — ${aircraftLabel}` : ""}
         </h1>
         <Button asChild variant="outline" size="sm">
           <Link href={`/personnel/${id}`}>Cancel</Link>
@@ -52,7 +59,11 @@ export default async function CurrencyItemPage({
           <CurrencyForm
             action={upsertCurrencyItem}
             error={error}
-            hiddenFields={{ pilot_id: id, item_type: validItemType }}
+            hiddenFields={{
+              pilot_id: id,
+              item_type: validItemType,
+              aircraft_type_code: aircraftCode ?? "",
+            }}
             defaultValues={
               preserved ??
               (item

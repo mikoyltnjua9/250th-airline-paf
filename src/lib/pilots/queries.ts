@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { addDaysIso, currentMonthBoundsInManila, formatIsoDate, todayInManila } from "@/lib/dates";
 import {
   aircraftCategoryForPosition,
+  compareSerialNumbers,
   effectiveFitness,
   NON_PILOT_POSITIONS_FILTER,
   type EffectiveFitness,
@@ -57,10 +58,13 @@ export async function getPilotDirectory(status: "active" | "inactive" = "active"
     if (!latestApe.has(a.pilot_id)) latestApe.set(a.pilot_id, a);
   }
 
-  return ((pilotsRes.data ?? []) as unknown as Omit<DirectoryRow, "fitness">[]).map((p) => ({
-    ...p,
-    fitness: effectiveFitness(p.fit_to_fly, latestApe.get(p.id)),
-  }));
+  // The Directory lists people in serial-number (AFSN) order.
+  return ((pilotsRes.data ?? []) as unknown as Omit<DirectoryRow, "fitness">[])
+    .map((p) => ({
+      ...p,
+      fitness: effectiveFitness(p.fit_to_fly, latestApe.get(p.id)),
+    }))
+    .sort((a, b) => compareSerialNumbers(a.afsn, b.afsn) || a.full_name.localeCompare(b.full_name));
 }
 
 export type WorkloadRow = {
@@ -327,14 +331,18 @@ export async function getTrainingRecord(
 export async function getCurrencyItem(
   pilotId: string,
   itemType: CurrencyItem["item_type"],
+  aircraftTypeCode: string | null = null,
 ): Promise<CurrencyItem | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const query = supabase
     .from("currency_items")
     .select("*")
     .eq("pilot_id", pilotId)
-    .eq("item_type", itemType)
-    .maybeSingle();
+    .eq("item_type", itemType);
+  const { data, error } = await (aircraftTypeCode
+    ? query.eq("aircraft_type_code", aircraftTypeCode)
+    : query.is("aircraft_type_code", null)
+  ).maybeSingle();
   if (error) throw error;
   return data;
 }

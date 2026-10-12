@@ -32,12 +32,38 @@ function text(formData: FormData, name: string) {
 }
 
 /**
+ * Signature images are far too big to ride along in an error-redirect URL, so
+ * they're left out of the values handed back to the form.
+ */
+function withoutSignatures(formData: FormData) {
+  const copy = new FormData();
+  for (const [key, value] of formData) if (!key.endsWith("_signature")) copy.append(key, value);
+  return copy;
+}
+
+// A signature is the small PNG the signature pad produces; anything else (or
+// anything huge) is refused rather than stored.
+const SIGNATURE_RE = /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
+const MAX_SIGNATURE_LENGTH = 200_000;
+
+/**
  * Validates a submitted slip and applies the grading rule. The rule lives here
  * (not just in the form) so it can't be bypassed: any pilot competency graded 1
  * forces "not competent" / Remedial, and every 2 needs a comment.
  */
 function buildSlip(formData: FormData, backTo: string) {
-  const fail = (msg: string): never => redirectWithFormError(backTo, msg, formData);
+  const fail = (msg: string): never => redirectWithFormError(backTo, msg, withoutSignatures(formData));
+
+  const signature = (name: string, who: string) => {
+    const raw = String(formData.get(name) ?? "").trim();
+    if (!raw) return null;
+    if (raw.length > MAX_SIGNATURE_LENGTH || !SIGNATURE_RE.test(raw)) {
+      fail(`The ${who} signature couldn't be read. Clear it and sign again.`);
+    }
+    return raw;
+  };
+  const instructorSignature = signature("instructor_signature", "instructor");
+  const studentSignature = signature("student_signature", "student");
 
   const assessedOn = String(formData.get("assessed_on") ?? "").trim();
   if (!assessedOn) fail("Date is required.");
@@ -85,7 +111,10 @@ function buildSlip(formData: FormData, backTo: string) {
     positive_remarks: text(formData, "positive_remarks"),
     developmental_remarks: text(formData, "developmental_remarks"),
     summary: text(formData, "summary"),
-    student_concurrence: formData.get("student_concurrence") === "on",
+    instructor_signature: instructorSignature,
+    student_signature: studentSignature,
+    // The student's concurrence is their signature.
+    student_concurrence: studentSignature !== null,
     trainee_competent: competent,
     outcome: outcomeFor(competent),
   };
@@ -116,12 +145,16 @@ export async function createCbtaAssessment(formData: FormData) {
       ...slip,
       decided_by: profile.id,
       decided_by_name: profile.full_name,
+      instructor_signed_at: slip.instructor_signature ? new Date().toISOString() : null,
+      student_signed_at: slip.student_signature ? new Date().toISOString() : null,
       created_by: profile.id,
       updated_by: profile.id,
     })
     .select("id")
     .single();
-  if (error) redirectWithFormError(`/personnel/${pilotId}/cbta/new`, error.message, formData);
+  if (error) {
+    redirectWithFormError(`/personnel/${pilotId}/cbta/new`, error.message, withoutSignatures(formData));
+  }
 
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}/cbta/${data!.id}`);
@@ -134,6 +167,16 @@ export async function updateCbtaAssessment(formData: FormData) {
   const { profile, supabase } = await requireAssessor(pilotId);
   const slip = buildSlip(formData, back);
 
+  // A signature keeps the date it was made; only a new or cleared one changes it.
+  const { data: existing } = await supabase
+    .from("cbta_assessments")
+    .select("instructor_signature, instructor_signed_at, student_signature, student_signed_at")
+    .eq("id", slipId)
+    .eq("pilot_id", pilotId)
+    .maybeSingle();
+  const signedAt = (next: string | null, prev: string | null | undefined, prevAt: string | null | undefined) =>
+    next === null ? null : next === prev ? (prevAt ?? new Date().toISOString()) : new Date().toISOString();
+
   const { error } = await supabase
     .from("cbta_assessments")
     .update({
@@ -141,11 +184,21 @@ export async function updateCbtaAssessment(formData: FormData) {
       // The verdict is re-decided on every save, so the deciding person is too.
       decided_by: profile.id,
       decided_by_name: profile.full_name,
+      instructor_signed_at: signedAt(
+        slip.instructor_signature,
+        existing?.instructor_signature,
+        existing?.instructor_signed_at,
+      ),
+      student_signed_at: signedAt(
+        slip.student_signature,
+        existing?.student_signature,
+        existing?.student_signed_at,
+      ),
       updated_by: profile.id,
     })
     .eq("id", slipId)
     .eq("pilot_id", pilotId);
-  if (error) redirectWithFormError(back, error.message, formData);
+  if (error) redirectWithFormError(back, error.message, withoutSignatures(formData));
 
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}/cbta/${slipId}`);

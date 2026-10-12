@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { SignaturePad } from "@/components/signature-pad";
 import { cn } from "@/lib/utils";
 import {
   GRADE_LABELS,
@@ -219,10 +220,22 @@ export function CbtaForm({
           <Label htmlFor="summary">Summary</Label>
           <textarea id="summary" name="summary" defaultValue={dv.summary} className={textareaClass} />
         </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="student_concurrence" defaultChecked={dv.student_concurrence === "on"} />
-          Student concurrence
-        </label>
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Signatures</h3>
+        <div className="grid gap-6 sm:grid-cols-2">
+          <SignaturePad
+            name="instructor_signature"
+            label="Instructor Pilot / Examiner"
+            defaultValue={dv.instructor_signature}
+          />
+          <SignaturePad
+            name="student_signature"
+            label="Student concurrence"
+            defaultValue={dv.student_signature}
+          />
+        </div>
       </section>
 
       <section className="space-y-3 rounded-lg border bg-muted/30 p-4">

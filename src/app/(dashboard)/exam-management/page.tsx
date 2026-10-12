@@ -38,8 +38,8 @@ export default async function ExamManagementPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Written Exams</h1>
         <p className="text-muted-foreground">
           {sets.length} exams · {totalUsable.toLocaleString()} scored questions
-          {totalHeld > 0 ? ` · ${totalHeld} held back for review` : ""}. Assign exams to maintenance
-          staff and cabin crew from their profile in the Personnel Directory.
+          {totalHeld > 0 ? ` · ${totalHeld} held back for review` : ""}. Assign exams to pilots,
+          maintenance staff and cabin crew from their profile in the Personnel Directory.
         </p>
       </div>
 

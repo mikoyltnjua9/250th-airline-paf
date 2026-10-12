@@ -25,7 +25,8 @@ export function slipToDefaults(s: CbtaAssessment): Record<string, string> {
     summary: s.summary ?? "",
     trainee_competent: s.trainee_competent ? "yes" : "no",
   };
-  if (s.student_concurrence) d.student_concurrence = "on";
+  if (s.instructor_signature) d.instructor_signature = s.instructor_signature;
+  if (s.student_signature) d.student_signature = s.student_signature;
   for (const c of ALL_COMPETENCIES) {
     const e = s.grades[c.code];
     if (e?.grade != null) d[`grade_${c.code}`] = String(e.grade);

@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { examStatus, type ExamStatus } from "@/lib/exams/queries";
 import type { PersonnelType, SkillLevel } from "@/lib/types/pilot";
+import { examAudienceFor } from "@/lib/exams/audience";
 
 /** PostgREST returns at most 1000 rows per request; page through the rest. */
 async function fetchAll<T>(
@@ -179,9 +180,9 @@ export type AssignableExam = { id: string; label: string };
 /** Everything the profile's "Written Exams" card shows for one person. */
 export async function getPersonExams(personnelId: string, type: PersonnelType) {
   const supabase = await createClient();
-  const audience = type === "cabin_crew" ? "cabin_crew" : "maintenance";
+  const audience = examAudienceFor(type);
 
-  const [assignRes, attemptRes, setsRes, accountRes] = await Promise.all([
+  const [assignRes, attemptRes, setsRes, accountRes, aircraftRes] = await Promise.all([
     supabase
       .from("exam_assignments")
       .select("assigned_at, exam_sets(id, title, category, skill_level)")
@@ -192,12 +193,14 @@ export async function getPersonExams(personnelId: string, type: PersonnelType) {
       .eq("personnel_id", personnelId),
     supabase
       .from("exam_sets")
-      .select("id, title, category, skill_level")
+      .select("id, title, category, skill_level, aircraft_type_code")
       .eq("active", true)
       .eq("audience", audience)
       .order("category")
       .order("title"),
     supabase.from("profiles").select("id").eq("personnel_id", personnelId).maybeSingle(),
+    // Pilot exams are per aircraft: offer the ones for the aircraft they fly.
+    supabase.from("qualifications").select("aircraft_type_code").eq("pilot_id", personnelId),
   ]);
   if (assignRes.error) throw assignRes.error;
   if (attemptRes.error) throw attemptRes.error;
@@ -236,8 +239,23 @@ export async function getPersonExams(personnelId: string, type: PersonnelType) {
     .sort((a, b) => a.title.localeCompare(b.title));
 
   const assignedIds = new Set(assigned.map((a) => a.examSetId));
-  const assignable: AssignableExam[] = (setsRes.data ?? [])
+  const flownAircraft = new Set((aircraftRes.data ?? []).map((q) => q.aircraft_type_code as string));
+  const assignable: AssignableExam[] = ((setsRes.data ?? []) as {
+    id: string;
+    title: string;
+    category: string;
+    skill_level: string | null;
+    aircraft_type_code: string | null;
+  }[])
     .filter((s) => !assignedIds.has(s.id))
+    // A pilot with aircraft on file is only offered those aircraft's exams.
+    .filter(
+      (s) =>
+        type !== "pilot" ||
+        flownAircraft.size === 0 ||
+        !s.aircraft_type_code ||
+        flownAircraft.has(s.aircraft_type_code),
+    )
     .map((s) => ({
       id: s.id,
       label: `${s.skill_level ? `${s.skill_level} Skill — ` : ""}${s.category} / ${s.title}`,

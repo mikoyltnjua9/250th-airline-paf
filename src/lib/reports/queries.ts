@@ -141,7 +141,7 @@ async function currencyRows(): Promise<ReportRow[]> {
   const { data, error } = await supabase
     .from("currency_items")
     .select(
-      "item_type, last_date, validity_days, pilots(full_name, rank_code, position, active, ranks(label))",
+      "item_type, last_date, validity_days, aircraft_type_code, aircraft_types(label), pilots(full_name, rank_code, position, active, ranks(label))",
     )
     .order("pilot_id");
   if (error) throw error;
@@ -150,6 +150,8 @@ async function currencyRows(): Promise<ReportRow[]> {
     item_type: CurrencyItemType;
     last_date: string;
     validity_days: number;
+    aircraft_type_code: string | null;
+    aircraft_types: { label: string } | null;
     pilots: { full_name: string; rank_code: string; position: string; active: boolean; ranks: { label: string } | null } | null;
   }[];
 
@@ -164,6 +166,7 @@ async function currencyRows(): Promise<ReportRow[]> {
         Rank: c.pilots?.ranks?.label ?? c.pilots?.rank_code ?? "—",
         "Full Name": c.pilots?.full_name ?? "Unknown pilot",
         Requirement: CURRENCY_ITEM_LABELS[c.item_type],
+        Aircraft: c.aircraft_types?.label ?? c.aircraft_type_code ?? "—",
         "Last Date": formatDate(c.last_date),
         Expires: formatDate(currencyExpiryDate(c)),
         Status: QUAL_STATUS_LABELS[status],

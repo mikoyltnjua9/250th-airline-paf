@@ -59,7 +59,9 @@ export async function getAlerts(): Promise<Alert[]> {
     supabase
       .from("qualifications")
       .select("pilot_id, status, aircraft_type_code, expiry_date, aircraft_types(label, active)"),
-    supabase.from("currency_items").select("pilot_id, item_type, last_date, validity_days"),
+    supabase
+      .from("currency_items")
+      .select("pilot_id, item_type, aircraft_type_code, last_date, validity_days, aircraft_types(label)"),
     supabase
       .from("ape_records")
       .select("pilot_id, fit_to_fly, next_due_date")
@@ -176,11 +178,13 @@ export async function getAlerts(): Promise<Alert[]> {
   }
 
   // --- currency items -----------------------------------------------------
-  const currencyItems = (currencyRes.data ?? []) as {
+  const currencyItems = (currencyRes.data ?? []) as unknown as {
     pilot_id: string;
     item_type: CurrencyItemType;
+    aircraft_type_code: string | null;
     last_date: string;
     validity_days: number;
+    aircraft_types: { label: string } | null;
   }[];
 
   for (const item of currencyItems) {
@@ -191,11 +195,16 @@ export async function getAlerts(): Promise<Alert[]> {
     if (!currencyItemTypesForPosition(itemPosition).includes(item.item_type)) continue;
     const status = currencyStatus(item, EXPIRING_SOON_THRESHOLD_DAYS);
     if (status === "expired" || status === "expiring_soon") {
+      // A pilot qualified on two aircraft has two currencies per requirement,
+      // so the alert says which aircraft it's about.
+      const aircraftNote = item.aircraft_type_code
+        ? ` (${item.aircraft_types?.label ?? item.aircraft_type_code})`
+        : "";
       pushAlert(
         item.pilot_id,
         "currency",
-        item.item_type,
-        `${CURRENCY_ITEM_LABELS[item.item_type]} ${status === "expired" ? "lapsed" : "expiring"}`,
+        `${item.item_type}:${item.aircraft_type_code ?? ""}`,
+        `${CURRENCY_ITEM_LABELS[item.item_type]} ${status === "expired" ? "lapsed" : "expiring"}${aircraftNote}`,
         currencyExpiryDate(item),
         status,
       );

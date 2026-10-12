@@ -23,28 +23,31 @@ const STATUS_STYLE: Record<ExamStatus, string> = {
   due: "bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-300",
 };
 
-/** "Written Exams" on a maintenance / cabin-crew profile: assign exams, see
- * where each stands, and the attempt history. */
+/** "Written Exams" on a pilot / maintenance / cabin-crew profile: assign exams,
+ * see where each stands, and the attempt history. */
 export function PersonExamsCard({
   personnelId,
   assigned,
   assignable,
   hasLogin,
   history,
+  recordsToStaneval,
 }: {
   personnelId: string;
   assigned: PersonExam[];
   assignable: AssignableExam[];
   hasLogin: boolean;
   history: RecentAttempt[];
+  /** Maintenance and cabin-crew results also land in StanEval; pilots' don't. */
+  recordsToStaneval: boolean;
 }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Written Exams</CardTitle>
         <CardDescription>
-          Exams assigned to this person. A result is recorded below and as a Pass/Fail entry under
-          StanEval &amp; Grading.
+          Exams assigned to this person. Results are kept in the attempt history below
+          {recordsToStaneval ? " and as a Pass/Fail entry under StanEval & Grading" : ""}.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

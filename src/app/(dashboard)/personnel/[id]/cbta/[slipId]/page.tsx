@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PrintButton } from "@/components/reports/print-button";
+import { Crest } from "@/components/crest";
 import { getPilotProfile } from "@/lib/pilots/queries";
 import { getCbtaAssessment } from "@/lib/cbta/queries";
 import {
@@ -15,13 +16,41 @@ import {
   type Competency,
   type CompetencyGroup,
 } from "@/lib/cbta/competencies";
-import { formatIsoDate } from "@/lib/dates";
+import { formatIsoDate, formatManilaDate } from "@/lib/dates";
 
 function Field({ label, value }: { label: string; value: string | number | null }) {
   return (
     <div>
       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="min-h-5 border-b text-sm">{value === null || value === "" ? "" : value}</p>
+    </div>
+  );
+}
+
+function SignatureBox({
+  label,
+  name,
+  signature,
+  signedAt,
+}: {
+  label: string;
+  name: string | null;
+  signature: string | null;
+  signedAt: string | null;
+}) {
+  return (
+    <div className="break-inside-avoid">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="flex h-20 items-end border-b bg-white px-2">
+        {signature ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={signature} alt={`${label} signature`} className="max-h-[4.5rem] w-auto max-w-full object-contain" />
+        ) : (
+          <span className="pb-1 text-xs text-muted-foreground">Not signed</span>
+        )}
+      </div>
+      <p className="mt-1 text-sm">{name || " "}</p>
+      {signedAt && <p className="text-xs text-muted-foreground">Signed {formatManilaDate(signedAt)}</p>}
     </div>
   );
 }
@@ -41,7 +70,7 @@ export default async function CbtaSlipPage({
       .map((c) => {
         const e = slip.grades[c.code];
         return (
-          <div key={c.code} className="grid grid-cols-[1fr_2.5rem] gap-x-3 border-b py-1.5 text-sm">
+          <div key={c.code} className="grid grid-cols-[1fr_2.5rem] gap-x-3 border-b py-1.5 text-sm break-inside-avoid">
             <div>
               <p className="font-medium">{c.label}</p>
               {e?.comment && <p className="whitespace-pre-wrap text-muted-foreground">{e.comment}</p>}
@@ -58,6 +87,7 @@ export default async function CbtaSlipPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      <style>{`@media print { @page { size: A4; margin: 12mm; } html, body, .bg-background { background: #fff !important; } }`}</style>
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
           href={`/personnel/${id}`}
@@ -76,6 +106,7 @@ export default async function CbtaSlipPage({
 
       <div className="space-y-5 rounded-xl border p-6 ring-1 ring-foreground/10 print:rounded-none print:border-0 print:p-0 print:ring-0">
         <div className="text-center">
+          <Crest className="mx-auto mb-2 h-14 w-14" />
           <p className="text-xs font-semibold uppercase tracking-wide">Philippine Air Force</p>
           <p className="text-xs font-semibold uppercase tracking-wide">250th Presidential Airlift Wing</p>
           <p className="text-[11px] text-muted-foreground">Colonel Jesus Villamor Air Base, Pasay City</p>
@@ -119,7 +150,7 @@ export default async function CbtaSlipPage({
         </p>
 
         {(["knowledge", "skills", "attitude"] as const).map((g) => (
-          <section key={g}>
+          <section key={g} className="break-inside-avoid-page">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {GROUP_LABELS[g]}
             </h2>
@@ -127,7 +158,7 @@ export default async function CbtaSlipPage({
           </section>
         ))}
 
-        <section>
+        <section className="break-inside-avoid-page">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {GROUP_LABELS.instructor}
           </h2>
@@ -140,18 +171,33 @@ export default async function CbtaSlipPage({
           ["Summary", slip.summary],
         ].map(([l, v]) =>
           v ? (
-            <section key={l}>
+            <section key={l} className="break-inside-avoid">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{l}</h2>
               <p className="whitespace-pre-wrap text-sm">{v}</p>
             </section>
           ) : null,
         )}
 
-        <div className="grid grid-cols-2 gap-x-6 gap-y-3 border-t pt-4">
-          <Field label="Trainee competent" value={slip.trainee_competent ? "YES" : "NO"} />
-          <Field label="Training organization" value={OUTCOME_LABELS[slip.outcome].toUpperCase()} />
-          <Field label="Decided by" value={slip.decided_by_name} />
-          <Field label="Student concurrence" value={slip.student_concurrence ? "Yes" : "Not recorded"} />
+        <div className="break-inside-avoid space-y-5 border-t pt-4">
+          <div className="grid grid-cols-3 gap-x-6">
+            <Field label="Trainee competent" value={slip.trainee_competent ? "YES" : "NO"} />
+            <Field label="Training organization" value={OUTCOME_LABELS[slip.outcome].toUpperCase()} />
+            <Field label="Decided by" value={slip.decided_by_name} />
+          </div>
+          <div className="grid grid-cols-2 gap-x-6">
+            <SignatureBox
+              label="Instructor Pilot / Examiner"
+              name={slip.instructor_name}
+              signature={slip.instructor_signature}
+              signedAt={slip.instructor_signed_at}
+            />
+            <SignatureBox
+              label="Student concurrence"
+              name={`${profile.rankLabel} ${profile.pilot.full_name}`.trim()}
+              signature={slip.student_signature}
+              signedAt={slip.student_signed_at}
+            />
+          </div>
         </div>
       </div>
     </div>

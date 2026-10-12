@@ -45,7 +45,9 @@ export default async function EditCbtaPage({
             submitLabel="Save changes"
             error={error}
             hiddenFields={{ pilot_id: id, slip_id: slipId }}
-            defaultValues={parsePreservedValues(values) ?? slipToDefaults(slip)}
+            // Signatures are never carried in the redirect (too large for a URL),
+            // so a failed save keeps the ones on file rather than blanking them.
+            defaultValues={{ ...slipToDefaults(slip), ...parsePreservedValues(values) }}
             today={todayInManila()}
           />
         </CardContent>

@@ -99,13 +99,36 @@ export default async function PilotProfilePage({
   // gauge, fitness) are hidden for maintenance staff, cabin crew and others.
   const personnelType = personnelTypeForPosition(pilot.position);
   const isPilot = personnelType === "pilot";
-  // Maintenance staff and cabin crew take written exams; pilots don't.
+  // Pilots, maintenance staff and cabin crew take written exams.
   const examData =
-    personnelType === "maintenance" || personnelType === "cabin_crew"
+    personnelType !== "other"
       ? await Promise.all([getPersonExams(id, personnelType), getRecentAttempts(20, id)])
       : null;
   const cbtaSlips = isPilot ? await getCbtaAssessments(id) : [];
   const currencyItemTypes = currencyItemTypesForPosition(pilot.position);
+  // Currency is tracked per aircraft the pilot is qualified on, so a pilot who
+  // flies two types gets a separate set of requirements for each.
+  const currencyGroups = (() => {
+    const aircraft = new Map<string, string>();
+    for (const q of qualifications) {
+      aircraft.set(q.aircraft_type_code, q.aircraft_types?.label ?? q.aircraft_type_code);
+    }
+    for (const c of currencyItems) {
+      if (c.aircraft_type_code && !aircraft.has(c.aircraft_type_code)) {
+        aircraft.set(c.aircraft_type_code, c.aircraft_type_code);
+      }
+    }
+    const groups: { code: string | null; label: string }[] = [...aircraft].map(([code, label]) => ({
+      code,
+      label,
+    }));
+    // Records saved without an aircraft stay visible; a pilot with no aircraft
+    // qualification yet still gets the one plain set.
+    if (groups.length === 0 || currencyItems.some((c) => !c.aircraft_type_code)) {
+      groups.push({ code: null, label: groups.length ? "All aircraft" : "" });
+    }
+    return groups;
+  })();
   const visibleCrewRoles = crewRolesForPosition(crewRoles, pilot.position);
   const latestApe = apeRecords[0] ?? null;
   const fitness = effectiveFitness(pilot.fit_to_fly, latestApe);
@@ -213,6 +236,7 @@ export default async function PilotProfilePage({
           assignable={examData[0].assignable}
           hasLogin={examData[0].hasLogin}
           history={examData[1]}
+          recordsToStaneval={!isPilot}
         />
       )}
 
@@ -456,11 +480,22 @@ export default async function PilotProfilePage({
         <Card>
           <CardHeader>
             <CardTitle>Currency Status</CardTitle>
+            {currencyGroups.length > 1 && (
+              <CardDescription>Tracked separately for each aircraft this pilot flies.</CardDescription>
+            )}
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
+          <CardContent className="space-y-4">
+            {currencyGroups.map((group) => (
+            <div key={group.code ?? "all"} className="space-y-2">
+              {currencyGroups.length > 1 && (
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {group.label}
+                </p>
+              )}
               {currencyItemTypes.map((itemType) => {
-                const item = currencyItems.find((c) => c.item_type === itemType);
+                const item = currencyItems.find(
+                  (c) => c.item_type === itemType && (c.aircraft_type_code ?? null) === group.code,
+                );
                 return (
                   <div
                     key={itemType}
@@ -477,13 +512,15 @@ export default async function PilotProfilePage({
                     <div className="flex shrink-0 items-center gap-2">
                       {item && <StatusBadge status={currencyStatus(item)} />}
                       <Button asChild variant="outline" size="sm">
-                        <Link href={`/personnel/${id}/currency/${itemType}`}>
+                        <Link
+                          href={`/personnel/${id}/currency/${itemType}${group.code ? `?aircraft=${group.code}` : ""}`}
+                        >
                           {item ? "Edit" : "Add"}
                         </Link>
                       </Button>
                       {item && (
                         <ConfirmActionButton
-                          onConfirm={deleteCurrencyItem.bind(null, id, itemType)}
+                          onConfirm={deleteCurrencyItem.bind(null, id, itemType, group.code)}
                           triggerLabel="Delete"
                           title="Delete this currency record?"
                           description="This can't be undone."
@@ -495,6 +532,7 @@ export default async function PilotProfilePage({
                 );
               })}
             </div>
+            ))}
           </CardContent>
         </Card>
         )}

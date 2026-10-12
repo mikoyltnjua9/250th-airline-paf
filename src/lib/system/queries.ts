@@ -59,8 +59,8 @@ export async function getAccounts(): Promise<AccountRow[]> {
 export type LinkablePerson = { id: string; label: string };
 
 /**
- * Personnel who can be given an examinee login: active maintenance staff and
- * cabin crew that don't already have one. (One login per person.)
+ * Personnel who can be given an examinee login: active pilots, maintenance
+ * staff and cabin crew that don't already have one. (One login per person.)
  */
 export async function getLinkablePersonnel(): Promise<LinkablePerson[]> {
   const admin = createAdminClient();
@@ -69,7 +69,13 @@ export async function getLinkablePersonnel(): Promise<LinkablePerson[]> {
       .from("pilots")
       .select("id, full_name, position, skill_level")
       .eq("active", true)
-      .in("position", ["Maintenance Officer", "Maintenance Technician", "Flight Attendant"])
+      .in("position", [
+        "Fixed-Wing Pilot",
+        "Rotary Pilot",
+        "Maintenance Officer",
+        "Maintenance Technician",
+        "Flight Attendant",
+      ])
       .order("full_name"),
     admin.from("profiles").select("personnel_id").not("personnel_id", "is", null),
   ]);

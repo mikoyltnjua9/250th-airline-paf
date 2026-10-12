@@ -25,6 +25,18 @@ export const POSITIONS = [
 export type PersonnelType = "pilot" | "maintenance" | "cabin_crew" | "other";
 
 /**
+ * Orders serial numbers (AFSN) by their number: "O-9999" before "O-12345".
+ * Anything without digits sorts after the numbered ones.
+ */
+export function compareSerialNumbers(a: string, b: string): number {
+  const aHasDigits = /\d/.test(a);
+  const bHasDigits = /\d/.test(b);
+  if (aHasDigits !== bHasDigits) return aHasDigits ? -1 : 1;
+  const diff = Number(a.replace(/\D/g, "")) - Number(b.replace(/\D/g, ""));
+  return diff || a.localeCompare(b);
+}
+
+/**
  * What kind of person a position is. The app began pilot-only, so anything
  * unrecognized (old free-text values like "Pilot") stays a pilot rather than
  * silently dropping out of wing-wide pilot views.
@@ -172,6 +184,10 @@ export type CurrencyItem = {
   id: string;
   pilot_id: string;
   item_type: CurrencyItemType;
+  /** Currency is tracked per aircraft: a pilot who flies two types has a
+   * separate set of requirements for each. Null only for records saved
+   * before that (or for a pilot with no aircraft qualification yet). */
+  aircraft_type_code: string | null;
   last_date: string;
   validity_days: number;
 };

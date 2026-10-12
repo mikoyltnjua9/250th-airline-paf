@@ -7,6 +7,7 @@ import { getExaminee } from "@/lib/exams/session";
 import { examStatus } from "@/lib/exams/queries";
 import { addDaysIso, todayInManila } from "@/lib/dates";
 import { EXAM_CYCLE_DAYS } from "@/lib/exams/cycle";
+import { personnelTypeForPosition } from "@/lib/types/pilot";
 
 /**
  * Every action here runs on the server with the service-role client, because
@@ -43,7 +44,11 @@ export async function startExam(examSetId: string) {
     .maybeSingle();
   if (!assignment) throw new Error("That exam isn't assigned to you.");
 
-  const { data: set } = await admin.from("exam_sets").select("active").eq("id", examSetId).single();
+  const { data: set } = await admin
+    .from("exam_sets")
+    .select("active, questions_per_attempt")
+    .eq("id", examSetId)
+    .single();
   if (!set?.active) throw new Error("That exam isn't available.");
 
   const { data: attempts } = await admin
@@ -69,9 +74,12 @@ export async function startExam(examSetId: string) {
   const questions = (qs ?? []) as unknown as { id: string; exam_options: { id: string }[] }[];
   if (questions.length === 0) throw new Error("This exam has no scorable questions yet.");
 
-  // Full official set every time, but shuffled: question order AND option
-  // order, so a retake can't be passed by remembering positions.
-  const order = shuffle(questions).map((q) => ({
+  // Shuffled every time: question order AND option order, so a retake can't
+  // be passed by remembering positions. A set with a sitting size draws that
+  // many questions at random from its bank; otherwise it's the full set.
+  const limit = set.questions_per_attempt as number | null;
+  const drawn = limit ? shuffle(questions).slice(0, limit) : shuffle(questions);
+  const order = drawn.map((q) => ({
     q: q.id,
     opts: shuffle(q.exam_options.map((o) => o.id)),
   }));
@@ -157,26 +165,35 @@ export async function submitExam(attemptId: string) {
   };
   const passed = percent >= Number(set.pass_mark);
 
-  // The result becomes a Pass/Fail StanEval record on the person's profile.
+  // For maintenance staff and cabin crew the result also becomes a Pass/Fail
+  // StanEval record on their profile. Pilots' StanEval history (and the due
+  // dates their alerts run on) is flight-check based, so a written exam never
+  // writes to it: their result lives with the exam attempts.
+  const { data: person } = await admin.from("pilots").select("position").eq("id", me.personnelId).maybeSingle();
+  const isPilot = !!person && personnelTypeForPosition(person.position) === "pilot";
   const grading = `Written exam: ${set.category} / ${set.title}${
     set.skill_level ? ` (${set.skill_level} Skill)` : ""
   } - ${percent}% (${correct}/${total})`;
-  const { data: staneval, error: sErr } = await admin
-    .from("staneval_records")
-    .insert({
-      pilot_id: me.personnelId,
-      eval_date: todayInManila(),
-      status: passed ? "pass" : "fail",
-      grading,
-      // A pass covers the weekly cycle, so the next one is due a week out; a
-      // fail has no due date (they can retake straight away).
-      next_due_date: passed ? addDaysIso(todayInManila(), EXAM_CYCLE_DAYS) : null,
-      created_by: me.userId,
-      updated_by: me.userId,
-    })
-    .select("id")
-    .single();
-  if (sErr) throw sErr;
+  let stanevalId: string | null = null;
+  if (!isPilot) {
+    const { data: staneval, error: sErr } = await admin
+      .from("staneval_records")
+      .insert({
+        pilot_id: me.personnelId,
+        eval_date: todayInManila(),
+        status: passed ? "pass" : "fail",
+        grading,
+        // A pass covers the weekly cycle, so the next one is due a week out; a
+        // fail has no due date (they can retake straight away).
+        next_due_date: passed ? addDaysIso(todayInManila(), EXAM_CYCLE_DAYS) : null,
+        created_by: me.userId,
+        updated_by: me.userId,
+      })
+      .select("id")
+      .single();
+    if (sErr) throw sErr;
+    stanevalId = staneval.id;
+  }
 
   // Guarded on submitted_at IS NULL so a double-click / second tab can't
   // grade the same attempt twice.
@@ -188,13 +205,13 @@ export async function submitExam(attemptId: string) {
       scored_correct: correct,
       percent,
       passed,
-      staneval_record_id: staneval.id,
+      staneval_record_id: stanevalId,
     })
     .eq("id", attemptId)
     .is("submitted_at", null)
     .select("id");
   if (uErr || !updated || updated.length === 0) {
-    await admin.from("staneval_records").delete().eq("id", staneval.id);
+    if (stanevalId) await admin.from("staneval_records").delete().eq("id", stanevalId);
     if (uErr) throw uErr;
   }
 

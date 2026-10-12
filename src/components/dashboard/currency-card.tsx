@@ -21,7 +21,9 @@ export function CurrencyCard({ rows }: { rows: CurrencySummaryRow[] }) {
     <Card>
       <CardHeader>
         <CardTitle>Currency Status</CardTitle>
-        <CardDescription>Pilots current on each flight-currency requirement.</CardDescription>
+        <CardDescription>
+          Flight-currency records by requirement. A pilot who flies two aircraft has one for each.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-3 sm:hidden">
