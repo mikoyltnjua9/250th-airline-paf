@@ -7,6 +7,7 @@ import { getPilotProfile, getCurrencyItem } from "@/lib/pilots/queries";
 import { upsertCurrencyItem } from "@/app/(dashboard)/personnel/[id]/currency/actions";
 import { CURRENCY_ITEM_LABELS, type CurrencyItemType } from "@/lib/types/pilot";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 const VALID_ITEM_TYPES = Object.keys(CURRENCY_ITEM_LABELS) as CurrencyItemType[];
 
@@ -18,6 +19,7 @@ export default async function CurrencyItemPage({
   searchParams: Promise<{ error?: string; values?: string; aircraft?: string }>;
 }) {
   const { id, itemType } = await params;
+  await requirePermission("currency:manage", `/personnel/${id}`);
   const { error, values, aircraft } = await searchParams;
   const preserved = parsePreservedValues(values);
   // After a failed save the aircraft comes back with the preserved values.

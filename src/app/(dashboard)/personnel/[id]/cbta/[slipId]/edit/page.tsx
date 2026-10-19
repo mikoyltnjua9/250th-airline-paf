@@ -9,6 +9,7 @@ import { slipToDefaults } from "@/lib/cbta/defaults";
 import { updateCbtaAssessment } from "@/app/(dashboard)/personnel/[id]/cbta/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
 import { todayInManila } from "@/lib/dates";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function EditCbtaPage({
   params,
@@ -18,6 +19,7 @@ export default async function EditCbtaPage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, slipId } = await params;
+  await requirePermission("cbta:manage", `/personnel/${id}`);
   const [profile, slip, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getCbtaAssessment(id, slipId),

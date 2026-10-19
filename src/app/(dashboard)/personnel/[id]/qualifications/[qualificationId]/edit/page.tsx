@@ -6,6 +6,7 @@ import { QualificationForm } from "@/components/pilots/qualification-form";
 import { getPilotProfile, getQualification, getSelectableAircraftTypes } from "@/lib/pilots/queries";
 import { updateQualification } from "@/app/(dashboard)/personnel/[id]/qualifications/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function EditQualificationPage({
   params,
@@ -15,6 +16,7 @@ export default async function EditQualificationPage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, qualificationId } = await params;
+  await requirePermission("qualifications:manage", `/personnel/${id}`);
   const [profile, qualification, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getQualification(id, qualificationId),

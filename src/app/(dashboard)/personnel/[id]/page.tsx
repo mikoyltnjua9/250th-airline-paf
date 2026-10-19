@@ -34,6 +34,8 @@ import {
 } from "@/components/status-badge";
 import { getPilotProfile, getDutyStatus } from "@/lib/pilots/queries";
 import { getAlerts } from "@/lib/alerts/queries";
+import { getCurrentProfile } from "@/lib/auth/get-profile";
+import { hasPermission, type Permission } from "@/lib/permissions";
 import { PersonExamsCard } from "@/components/exams/person-exams-card";
 import { getCbtaAssessments } from "@/lib/cbta/queries";
 import { OUTCOME_LABELS } from "@/lib/cbta/competencies";
@@ -56,6 +58,25 @@ import {
   CURRENCY_ITEM_LABELS,
 } from "@/lib/types/pilot";
 
+/** A link when the viewer may follow it, otherwise the same box without one. */
+function MaybeLink({
+  href,
+  className,
+  children,
+}: {
+  href: string | null;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return href ? (
+    <Link href={href} className={className}>
+      {children}
+    </Link>
+  ) : (
+    <div className={className}>{children}</div>
+  );
+}
+
 function formatDate(iso: string | null) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-US", {
@@ -71,13 +92,27 @@ export default async function PilotProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [profile, allAlerts, dutyStatus] = await Promise.all([
+  const [profile, allAlerts, dutyStatus, me] = await Promise.all([
     getPilotProfile(id),
     getAlerts(),
     getDutyStatus(id),
+    getCurrentProfile(),
   ]);
 
   if (!profile) notFound();
+
+  // What this account may change on the page. The database enforces the same
+  // rules; this just keeps buttons the account couldn't use off the screen.
+  const can = (permission: Permission) => hasPermission(me?.role_code, permission);
+  const canManagePerson = can("pilots:manage");
+  const canQualifications = can("qualifications:manage");
+  const canFlights = can("flights:manage");
+  const canApe = can("ape:manage");
+  const canCurrency = can("currency:manage");
+  const canStaneval = can("staneval:manage");
+  const canCbta = can("cbta:manage");
+  const canTraining = can("training:manage");
+  const canExams = can("exams:manage");
 
   const pilotAlerts = allAlerts.filter((a) => a.pilotId === id);
 
@@ -101,7 +136,7 @@ export default async function PilotProfilePage({
   const isPilot = personnelType === "pilot";
   // Pilots, maintenance staff and cabin crew take written exams.
   const examData =
-    personnelType !== "other"
+    personnelType !== "other" && canExams
       ? await Promise.all([getPersonExams(id, personnelType), getRecentAttempts(20, id)])
       : null;
   const cbtaSlips = isPilot ? await getCbtaAssessments(id) : [];
@@ -140,6 +175,7 @@ export default async function PilotProfilePage({
         <Button asChild variant="outline" size="sm">
           <Link href="/personnel">← Directory</Link>
         </Button>
+        {canManagePerson && (
         <div className="flex gap-2">
           <Button asChild variant="outline" size="sm">
             <Link href={`/personnel/${id}/edit`}>Edit Pilot</Link>
@@ -157,6 +193,7 @@ export default async function PilotProfilePage({
             <ReactivatePilotButton pilotId={id} />
           )}
         </div>
+        )}
       </div>
 
       {!pilot.active && (
@@ -246,9 +283,11 @@ export default async function PilotProfilePage({
         <Card>
           <CardHeader className="flex items-center justify-between">
             <CardTitle>Authorized Equipment</CardTitle>
-            <Button asChild size="sm">
-              <Link href={`/personnel/${id}/qualifications/new`}>Add Qualification</Link>
-            </Button>
+            {canQualifications && (
+              <Button asChild size="sm">
+                <Link href={`/personnel/${id}/qualifications/new`}>Add Qualification</Link>
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {qualifications.length === 0 ? (
@@ -263,18 +302,20 @@ export default async function PilotProfilePage({
                       </p>
                       <StatusBadge status={q.status} />
                     </div>
-                    <div className="mt-2 flex justify-end gap-2">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/personnel/${id}/qualifications/${q.id}/edit`}>Edit</Link>
-                      </Button>
-                      <ConfirmActionButton
-                        onConfirm={deleteQualification.bind(null, id, q.id)}
-                        triggerLabel="Delete"
-                        title="Delete this qualification?"
-                        description="This can't be undone."
-                        confirmLabel="Delete"
-                      />
-                    </div>
+                    {canQualifications && (
+                      <div className="mt-2 flex justify-end gap-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/personnel/${id}/qualifications/${q.id}/edit`}>Edit</Link>
+                        </Button>
+                        <ConfirmActionButton
+                          onConfirm={deleteQualification.bind(null, id, q.id)}
+                          triggerLabel="Delete"
+                          title="Delete this qualification?"
+                          description="This can't be undone."
+                          confirmLabel="Delete"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -285,7 +326,9 @@ export default async function PilotProfilePage({
         <Card>
           <CardHeader>
             <CardTitle>Qualification Status</CardTitle>
-            <CardDescription>Crew role, independent of aircraft type. Click to toggle.</CardDescription>
+            <CardDescription>
+              Crew role, independent of aircraft type.{canQualifications ? " Click to toggle." : ""}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -301,6 +344,7 @@ export default async function PilotProfilePage({
                       pilotId={id}
                       roleCode={role.code}
                       qualified={q?.qualified ?? false}
+                      readOnly={!canQualifications}
                     />
                   </div>
                 );
@@ -324,9 +368,11 @@ export default async function PilotProfilePage({
                 recent.
               </CardDescription>
             </div>
-            <Button asChild size="sm">
-              <Link href={`/personnel/${id}/flights/new`}>Add Flight</Link>
-            </Button>
+            {canFlights && (
+              <Button asChild size="sm">
+                <Link href={`/personnel/${id}/flights/new`}>Add Flight</Link>
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {flights.length === 0 ? (
@@ -335,9 +381,9 @@ export default async function PilotProfilePage({
               <>
                 <div className="space-y-2 sm:hidden">
                   {flights.map((f) => (
-                    <Link
+                    <MaybeLink
                       key={f.id}
-                      href={`/personnel/${id}/flights/${f.id}/edit`}
+                      href={canFlights ? `/personnel/${id}/flights/${f.id}/edit` : null}
                       className="block rounded-lg border p-3 text-sm transition-colors hover:bg-muted/50"
                     >
                       <div className="flex items-center justify-between">
@@ -347,16 +393,18 @@ export default async function PilotProfilePage({
                       <p className="mt-1 text-muted-foreground">
                         {f.route ?? "—"} · {f.duty} · {f.flying_time_hours.toFixed(1)}h
                       </p>
-                      <div className="mt-2 flex justify-end">
-                        <ConfirmActionButton
-                          onConfirm={deleteFlight.bind(null, id, f.id)}
-                          triggerLabel="Delete"
-                          title="Delete this flight?"
-                          description="This can't be undone."
-                          confirmLabel="Delete"
-                        />
-                      </div>
-                    </Link>
+                      {canFlights && (
+                        <div className="mt-2 flex justify-end">
+                          <ConfirmActionButton
+                            onConfirm={deleteFlight.bind(null, id, f.id)}
+                            triggerLabel="Delete"
+                            title="Delete this flight?"
+                            description="This can't be undone."
+                            confirmLabel="Delete"
+                          />
+                        </div>
+                      )}
+                    </MaybeLink>
                   ))}
                 </div>
                 <div className="hidden overflow-x-auto sm:block">
@@ -388,18 +436,20 @@ export default async function PilotProfilePage({
                             {f.flying_time_hours.toFixed(1)}
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button asChild variant="outline" size="sm">
-                                <Link href={`/personnel/${id}/flights/${f.id}/edit`}>Edit</Link>
-                              </Button>
-                              <ConfirmActionButton
-                                onConfirm={deleteFlight.bind(null, id, f.id)}
-                                triggerLabel="Delete"
-                                title="Delete this flight?"
-                                description="This can't be undone."
-                                confirmLabel="Delete"
-                              />
-                            </div>
+                            {canFlights && (
+                              <div className="flex justify-end gap-2">
+                                <Button asChild variant="outline" size="sm">
+                                  <Link href={`/personnel/${id}/flights/${f.id}/edit`}>Edit</Link>
+                                </Button>
+                                <ConfirmActionButton
+                                  onConfirm={deleteFlight.bind(null, id, f.id)}
+                                  triggerLabel="Delete"
+                                  title="Delete this flight?"
+                                  description="This can't be undone."
+                                  confirmLabel="Delete"
+                                />
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -421,9 +471,11 @@ export default async function PilotProfilePage({
                   : "Aviation Physical Examination history."}
               </CardDescription>
             </div>
-            <Button asChild size="sm">
-              <Link href={`/personnel/${id}/ape/new`}>Add APE Record</Link>
-            </Button>
+            {canApe && (
+              <Button asChild size="sm">
+                <Link href={`/personnel/${id}/ape/new`}>Add APE Record</Link>
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {apeRecords.length === 0 ? (
@@ -453,18 +505,32 @@ export default async function PilotProfilePage({
                         {formatDate(record.next_due_date)}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/personnel/${id}/ape/${record.id}/edit`}>Edit</Link>
-                      </Button>
-                      <ConfirmActionButton
-                        onConfirm={deleteApeRecord.bind(null, id, record.id)}
-                        triggerLabel="Delete"
-                        title="Delete this APE record?"
-                        description="This can't be undone."
-                        confirmLabel="Delete"
-                      />
-                    </div>
+                    {canApe && (
+                      <div className="flex shrink-0 items-center gap-2">
+                        {record.certificate_path && (
+                          <Button asChild variant="outline" size="sm">
+                            <a
+                              href={`/personnel/${id}/ape/${record.id}/certificate`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={record.certificate_name ?? "Medical certificate"}
+                            >
+                              Certificate
+                            </a>
+                          </Button>
+                        )}
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/personnel/${id}/ape/${record.id}/edit`}>Edit</Link>
+                        </Button>
+                        <ConfirmActionButton
+                          onConfirm={deleteApeRecord.bind(null, id, record.id)}
+                          triggerLabel="Delete"
+                          title="Delete this APE record?"
+                          description="This can't be undone."
+                          confirmLabel="Delete"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -511,21 +577,25 @@ export default async function PilotProfilePage({
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       {item && <StatusBadge status={currencyStatus(item)} />}
-                      <Button asChild variant="outline" size="sm">
-                        <Link
-                          href={`/personnel/${id}/currency/${itemType}${group.code ? `?aircraft=${group.code}` : ""}`}
-                        >
-                          {item ? "Edit" : "Add"}
-                        </Link>
-                      </Button>
-                      {item && (
-                        <ConfirmActionButton
-                          onConfirm={deleteCurrencyItem.bind(null, id, itemType, group.code)}
-                          triggerLabel="Delete"
-                          title="Delete this currency record?"
-                          description="This can't be undone."
-                          confirmLabel="Delete"
-                        />
+                      {canCurrency && (
+                        <>
+                          <Button asChild variant="outline" size="sm">
+                            <Link
+                              href={`/personnel/${id}/currency/${itemType}${group.code ? `?aircraft=${group.code}` : ""}`}
+                            >
+                              {item ? "Edit" : "Add"}
+                            </Link>
+                          </Button>
+                          {item && (
+                            <ConfirmActionButton
+                              onConfirm={deleteCurrencyItem.bind(null, id, itemType, group.code)}
+                              triggerLabel="Delete"
+                              title="Delete this currency record?"
+                              description="This can't be undone."
+                              confirmLabel="Delete"
+                            />
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -547,9 +617,11 @@ export default async function PilotProfilePage({
                   : "Standardization/evaluation check ride history."}
               </CardDescription>
             </div>
-            <Button asChild size="sm">
-              <Link href={`/personnel/${id}/staneval/new`}>Add StanEval</Link>
-            </Button>
+            {canStaneval && (
+              <Button asChild size="sm">
+                <Link href={`/personnel/${id}/staneval/new`}>Add StanEval</Link>
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {stanevalRecords.length === 0 ? (
@@ -573,18 +645,20 @@ export default async function PilotProfilePage({
                           : ""}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/personnel/${id}/staneval/${record.id}/edit`}>Edit</Link>
-                      </Button>
-                      <ConfirmActionButton
-                        onConfirm={deleteStanevalRecord.bind(null, id, record.id)}
-                        triggerLabel="Delete"
-                        title="Delete this StanEval record?"
-                        description="This can't be undone."
-                        confirmLabel="Delete"
-                      />
-                    </div>
+                    {canStaneval && (
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/personnel/${id}/staneval/${record.id}/edit`}>Edit</Link>
+                        </Button>
+                        <ConfirmActionButton
+                          onConfirm={deleteStanevalRecord.bind(null, id, record.id)}
+                          triggerLabel="Delete"
+                          title="Delete this StanEval record?"
+                          description="This can't be undone."
+                          confirmLabel="Delete"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -600,9 +674,11 @@ export default async function PilotProfilePage({
               <CardTitle>CBTA Grade Slips</CardTitle>
               <CardDescription>Competency-based training and checking assessments.</CardDescription>
             </div>
-            <Button asChild size="sm" className="print:hidden">
-              <Link href={`/personnel/${id}/cbta/new`}>New Grade Slip</Link>
-            </Button>
+            {canCbta && (
+              <Button asChild size="sm" className="print:hidden">
+                <Link href={`/personnel/${id}/cbta/new`}>New Grade Slip</Link>
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {cbtaSlips.length === 0 ? (
@@ -633,18 +709,20 @@ export default async function PilotProfilePage({
                         {slip.decided_by_name ? ` · decided by ${slip.decided_by_name}` : ""}
                       </p>
                     </Link>
-                    <div className="flex shrink-0 items-center gap-2 print:hidden">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/personnel/${id}/cbta/${slip.id}/edit`}>Edit</Link>
-                      </Button>
-                      <ConfirmActionButton
-                        onConfirm={deleteCbtaAssessment.bind(null, id, slip.id)}
-                        triggerLabel="Delete"
-                        title="Delete this grade slip?"
-                        description="This can't be undone."
-                        confirmLabel="Delete"
-                      />
-                    </div>
+                    {canCbta && (
+                      <div className="flex shrink-0 items-center gap-2 print:hidden">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/personnel/${id}/cbta/${slip.id}/edit`}>Edit</Link>
+                        </Button>
+                        <ConfirmActionButton
+                          onConfirm={deleteCbtaAssessment.bind(null, id, slip.id)}
+                          triggerLabel="Delete"
+                          title="Delete this grade slip?"
+                          description="This can't be undone."
+                          confirmLabel="Delete"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -661,9 +739,11 @@ export default async function PilotProfilePage({
               <CardTitle>Training Records</CardTitle>
               <CardDescription>Recurrent and specialized training history.</CardDescription>
             </div>
-            <Button asChild size="sm">
-              <Link href={`/personnel/${id}/training/new`}>Add Training Record</Link>
-            </Button>
+            {canTraining && (
+              <Button asChild size="sm">
+                <Link href={`/personnel/${id}/training/new`}>Add Training Record</Link>
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {trainingRecords.length === 0 ? (
@@ -684,18 +764,20 @@ export default async function PilotProfilePage({
                         {formatDate(record.training_date)}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/personnel/${id}/training/${record.id}/edit`}>Edit</Link>
-                      </Button>
-                      <ConfirmActionButton
-                        onConfirm={deleteTrainingRecord.bind(null, id, record.id)}
-                        triggerLabel="Delete"
-                        title="Delete this training record?"
-                        description="This can't be undone."
-                        confirmLabel="Delete"
-                      />
-                    </div>
+                    {canTraining && (
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/personnel/${id}/training/${record.id}/edit`}>Edit</Link>
+                        </Button>
+                        <ConfirmActionButton
+                          onConfirm={deleteTrainingRecord.bind(null, id, record.id)}
+                          triggerLabel="Delete"
+                          title="Delete this training record?"
+                          description="This can't be undone."
+                          confirmLabel="Delete"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

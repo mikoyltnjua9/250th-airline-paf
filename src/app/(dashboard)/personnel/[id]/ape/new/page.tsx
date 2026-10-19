@@ -6,6 +6,7 @@ import { ApeForm } from "@/components/pilots/ape-form";
 import { getPilotProfile } from "@/lib/pilots/queries";
 import { createApeRecord } from "@/app/(dashboard)/personnel/[id]/ape/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function NewApePage({
   params,
@@ -15,6 +16,7 @@ export default async function NewApePage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id } = await params;
+  await requirePermission("ape:manage", `/personnel/${id}`);
   const [profile, { error, values }] = await Promise.all([getPilotProfile(id), searchParams]);
   const preserved = parsePreservedValues(values);
 

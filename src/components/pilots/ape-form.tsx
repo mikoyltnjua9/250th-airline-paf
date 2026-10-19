@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { APE_CLASSIFICATIONS } from "@/lib/types/pilot";
+import { CertificateField } from "@/components/pilots/certificate-field";
 
 export type ApeFormDefaults = Partial<{
   last_ape_date: string;
@@ -18,12 +19,15 @@ export function ApeForm({
   defaultValues,
   hiddenFields,
   error,
+  existingCertificate,
 }: {
   action: (formData: FormData) => void;
   submitLabel: string;
   defaultValues?: ApeFormDefaults;
   hiddenFields?: Record<string, string>;
   error?: string;
+  /** File name of the certificate already attached to this record, if any. */
+  existingCertificate?: string | null;
 }) {
   return (
     <form action={action} className="space-y-6">
@@ -95,6 +99,7 @@ export function ApeForm({
             ))}
           </NativeSelect>
         </div>
+        <CertificateField existingName={existingCertificate} />
       </div>
 
       <div className="flex justify-end gap-3 border-t pt-6">

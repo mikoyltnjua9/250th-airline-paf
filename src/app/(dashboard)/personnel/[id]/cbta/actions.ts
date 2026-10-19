@@ -122,7 +122,7 @@ function buildSlip(formData: FormData, backTo: string) {
 
 async function requireAssessor(pilotId: string) {
   const profile = await getCurrentProfile();
-  if (!profile || !hasPermission(profile.role_code, "pilots:manage")) {
+  if (!profile || !hasPermission(profile.role_code, "cbta:manage")) {
     throw new Error("You don't have permission to record assessments.");
   }
   const supabase = await createClient();

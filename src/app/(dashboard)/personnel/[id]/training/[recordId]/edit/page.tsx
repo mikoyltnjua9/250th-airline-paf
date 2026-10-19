@@ -6,6 +6,7 @@ import { TrainingForm } from "@/components/pilots/training-form";
 import { getPilotProfile, getTrainingRecord } from "@/lib/pilots/queries";
 import { updateTrainingRecord } from "@/app/(dashboard)/personnel/[id]/training/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function EditTrainingRecordPage({
   params,
@@ -15,6 +16,7 @@ export default async function EditTrainingRecordPage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, recordId } = await params;
+  await requirePermission("training:manage", `/personnel/${id}`);
   const [profile, record, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getTrainingRecord(id, recordId),

@@ -6,6 +6,7 @@ import { QualificationForm } from "@/components/pilots/qualification-form";
 import { getPilotProfile, getSelectableAircraftTypes } from "@/lib/pilots/queries";
 import { createQualification } from "@/app/(dashboard)/personnel/[id]/qualifications/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function NewQualificationPage({
   params,
@@ -15,6 +16,7 @@ export default async function NewQualificationPage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id } = await params;
+  await requirePermission("qualifications:manage", `/personnel/${id}`);
   const [profile, { error, values }] = await Promise.all([getPilotProfile(id), searchParams]);
   const preserved = parsePreservedValues(values);
 

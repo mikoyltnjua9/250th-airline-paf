@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { hasPermission, type Permission } from "@/lib/permissions";
 
 type NavItem = {
   label: string;
@@ -33,6 +34,8 @@ type NavItem = {
    * a dedicated route. Suppresses the "active" highlight (it shares its
    * href with the real Personnel Directory item) and shows a hint instead. */
   perPilot?: boolean;
+  /** What the account needs to see this item (anyone who can open the dashboard if omitted). */
+  requires?: Permission;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -41,15 +44,15 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Personnel Verification", href: "/personnel", icon: ScanLine, perPilot: true },
   { label: "Qualifications", href: "/personnel", icon: GraduationCap, perPilot: true },
   { label: "Flying Hours & History", href: "/personnel", icon: PlaneTakeoff, perPilot: true },
-  { label: "Duty & Workload", href: "/duty-workload", icon: Gauge },
+  { label: "Duty & Workload", href: "/duty-workload", icon: Gauge, requires: "flights:view" },
   { label: "APE Status", href: "/personnel", icon: HeartPulse, perPilot: true },
   { label: "Currency Status", href: "/personnel", icon: RefreshCcw, perPilot: true },
   { label: "Training Records", href: "/personnel", icon: BookOpen, perPilot: true },
   { label: "StanEval & Grading", href: "/personnel", icon: ClipboardList, perPilot: true },
-  { label: "Written Exams", href: "/exam-management", icon: FileCheck2 },
+  { label: "Written Exams", href: "/exam-management", icon: FileCheck2, requires: "exams:manage" },
   { label: "Reports & Analytics", href: "/reports", icon: BarChart3 },
   { label: "Alerts & Notifications", href: "/alerts", icon: Bell },
-  { label: "System Management", href: "/system", icon: Settings },
+  { label: "System Management", href: "/system", icon: Settings, requires: "users:manage" },
 ];
 
 /**
@@ -57,12 +60,13 @@ const NAV_ITEMS: NavItem[] = [
  * rendered. Used by both the persistent desktop Sidebar and the mobile
  * drawer (MobileNav), so the two never drift apart.
  */
-export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+export function SidebarNav({ role, onNavigate }: { role: string; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const items = NAV_ITEMS.filter((item) => !item.requires || hasPermission(role, item.requires));
 
   return (
     <nav className="flex-1 space-y-1 px-3 py-4">
-      {NAV_ITEMS.map((item) => {
+      {items.map((item) => {
         const Icon = item.icon;
         const isActive =
           !item.perPilot && (pathname === item.href || pathname.startsWith(`${item.href}/`));

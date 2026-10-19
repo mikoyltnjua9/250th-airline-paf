@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
-import { roleLabel } from "@/lib/permissions";
+import { isStaffRole, roleLabel } from "@/lib/permissions";
 import { Header } from "@/components/app-shell/header";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import { Footer } from "@/components/app-shell/footer";
@@ -17,12 +17,18 @@ export default async function DashboardLayout({
   if (!profile) redirect("/login");
   // Examinees only ever see their own exams, never the wing dashboard.
   if (profile.role_code === "examinee") redirect("/exams");
+  // Anything else that isn't a staff role has no business here either.
+  if (!isStaffRole(profile.role_code)) redirect("/login");
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
-      <Header fullName={profile.full_name} roleLabel={roleLabel(profile.role_code)} />
+      <Header
+        fullName={profile.full_name}
+        roleLabel={roleLabel(profile.role_code)}
+        role={profile.role_code}
+      />
       <div className="flex min-h-0 flex-1">
-        <Sidebar />
+        <Sidebar role={profile.role_code} />
         <div className="flex min-w-0 flex-1 flex-col">
           <main className="flex-1 overflow-y-auto p-3 sm:p-6 print:overflow-visible print:p-0">
             {children}

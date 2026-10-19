@@ -8,6 +8,7 @@ import { createCbtaAssessment } from "@/app/(dashboard)/personnel/[id]/cbta/acti
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
 import { personnelTypeForPosition } from "@/lib/types/pilot";
 import { todayInManila } from "@/lib/dates";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function NewCbtaPage({
   params,
@@ -17,6 +18,7 @@ export default async function NewCbtaPage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id } = await params;
+  await requirePermission("cbta:manage", `/personnel/${id}`);
   const [profile, { error, values }] = await Promise.all([getPilotProfile(id), searchParams]);
   if (!profile || personnelTypeForPosition(profile.pilot.position) !== "pilot") notFound();
 

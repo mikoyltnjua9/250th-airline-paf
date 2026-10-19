@@ -26,10 +26,13 @@ function PilotList({
   pilots,
   total,
   showReactivate,
+  canManage,
 }: {
   pilots: DirectoryRow[];
   total: number;
   showReactivate?: boolean;
+  /** Only accounts that may manage people get the Reactivate button. */
+  canManage?: boolean;
 }) {
   if (total === 0) {
     return (
@@ -63,7 +66,11 @@ function PilotList({
             <p className="truncate text-xs text-muted-foreground">{pilot.afsn}</p>
           </div>
           {showReactivate ? (
-            <ReactivatePilotButton pilotId={pilot.id} />
+            canManage ? (
+              <ReactivatePilotButton pilotId={pilot.id} />
+            ) : (
+              <Badge variant="secondary">Deactivated</Badge>
+            )
           ) : (
             personnelTypeForPosition(pilot.position) === "pilot" ? (
               <FitToFlyBadge fitToFly={pilot.fitness.fit} reason={pilot.fitness.reason} />
@@ -84,9 +91,11 @@ function PilotList({
 export function PersonnelDirectory({
   activePilots,
   inactivePilots,
+  canManage = false,
 }: {
   activePilots: DirectoryRow[];
   inactivePilots: DirectoryRow[];
+  canManage?: boolean;
 }) {
   const [search, setSearch] = useState("");
 
@@ -128,7 +137,12 @@ export function PersonnelDirectory({
               {filteredInactive.length} of {inactivePilots.length}
             </p>
           )}
-          <PilotList pilots={filteredInactive} total={inactivePilots.length} showReactivate />
+          <PilotList
+            pilots={filteredInactive}
+            total={inactivePilots.length}
+            showReactivate
+            canManage={canManage}
+          />
         </TabsContent>
       </Tabs>
     </div>

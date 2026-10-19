@@ -5,12 +5,14 @@ import { PilotForm } from "@/components/pilots/pilot-form";
 import { getRanks } from "@/lib/pilots/queries";
 import { createPilot } from "@/app/(dashboard)/personnel/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function NewPilotPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
+  await requirePermission("pilots:manage", "/personnel");
   const [ranks, { error, values }] = await Promise.all([getRanks(), searchParams]);
   const preserved = parsePreservedValues(values);
 

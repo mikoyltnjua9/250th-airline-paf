@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // APE medical certificates (up to 4 MB) arrive through a Server Action;
+    // the default cap is 1 MB.
+    serverActions: { bodySizeLimit: "5mb" },
+  },
   turbopack: {
     // Pin explicitly — otherwise Turbopack walks up looking for a lockfile
     // and can land on an unrelated one outside this repo.

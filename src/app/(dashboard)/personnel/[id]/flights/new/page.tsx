@@ -6,6 +6,7 @@ import { FlightForm } from "@/components/pilots/flight-form";
 import { getPilotProfile, getSelectableAircraftTypes } from "@/lib/pilots/queries";
 import { createFlight } from "@/app/(dashboard)/personnel/[id]/flights/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function NewFlightPage({
   params,
@@ -15,6 +16,7 @@ export default async function NewFlightPage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id } = await params;
+  await requirePermission("flights:manage", `/personnel/${id}`);
   const [profile, { error, values }] = await Promise.all([getPilotProfile(id), searchParams]);
   const preserved = parsePreservedValues(values);
 

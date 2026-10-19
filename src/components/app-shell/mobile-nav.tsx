@@ -13,7 +13,7 @@ import {
 import { Crest } from "@/components/crest";
 import { SidebarNav } from "@/components/app-shell/sidebar-nav";
 
-export function MobileNav() {
+export function MobileNav({ role }: { role: string }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -37,7 +37,7 @@ export function MobileNav() {
           <Crest className="h-9 w-9 shrink-0" />
           <SheetTitle className="text-sidebar-foreground">250th PAW Safety Dashboard</SheetTitle>
         </SheetHeader>
-        <SidebarNav onNavigate={() => setOpen(false)} />
+        <SidebarNav role={role} onNavigate={() => setOpen(false)} />
       </SheetContent>
     </Sheet>
   );

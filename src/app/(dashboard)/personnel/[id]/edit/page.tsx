@@ -6,6 +6,7 @@ import { PilotForm } from "@/components/pilots/pilot-form";
 import { getPilotProfile, getRanks } from "@/lib/pilots/queries";
 import { updatePilot } from "@/app/(dashboard)/personnel/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function EditPilotPage({
   params,
@@ -15,6 +16,7 @@ export default async function EditPilotPage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id } = await params;
+  await requirePermission("pilots:manage", `/personnel/${id}`);
   const { error, values } = await searchParams;
   const preserved = parsePreservedValues(values);
   const [profile, ranks] = await Promise.all([getPilotProfile(id), getRanks()]);

@@ -12,12 +12,29 @@ export function CrewQualificationToggle({
   pilotId,
   roleCode,
   qualified,
+  readOnly = false,
 }: {
   pilotId: string;
   roleCode: string;
   qualified: boolean;
+  /** For accounts that may look but not change (shown as a plain badge). */
+  readOnly?: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
+
+  if (readOnly) {
+    return (
+      <Badge
+        className={
+          qualified
+            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300"
+            : "bg-muted text-muted-foreground"
+        }
+      >
+        {qualified ? "Qualified" : "Not Qualified"}
+      </Badge>
+    );
+  }
 
   return (
     <button

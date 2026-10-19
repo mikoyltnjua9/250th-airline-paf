@@ -6,6 +6,7 @@ import { StanevalForm } from "@/components/pilots/staneval-form";
 import { getPilotProfile, getStanevalRecord } from "@/lib/pilots/queries";
 import { updateStanevalRecord } from "@/app/(dashboard)/personnel/[id]/staneval/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function EditStanevalPage({
   params,
@@ -15,6 +16,7 @@ export default async function EditStanevalPage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, recordId } = await params;
+  await requirePermission("staneval:manage", `/personnel/${id}`);
   const [profile, record, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getStanevalRecord(id, recordId),

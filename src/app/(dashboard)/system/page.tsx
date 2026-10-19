@@ -5,8 +5,11 @@ import { AccountsList } from "@/components/system/accounts-list";
 import { AuditLogTable } from "@/components/system/audit-log-table";
 import { getAccounts, getAuditLog, getLinkablePersonnel, getRoles } from "@/lib/system/queries";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function SystemManagementPage() {
+  // Accounts and the audit trail are for super admins only.
+  await requirePermission("users:manage");
   const [accounts, roles, auditLog, currentProfile, linkablePersonnel] = await Promise.all([
     getAccounts(),
     getRoles(),

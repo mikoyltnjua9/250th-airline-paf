@@ -6,6 +6,7 @@ import { ApeForm } from "@/components/pilots/ape-form";
 import { getPilotProfile, getApeRecord } from "@/lib/pilots/queries";
 import { updateApeRecord } from "@/app/(dashboard)/personnel/[id]/ape/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function EditApePage({
   params,
@@ -15,6 +16,7 @@ export default async function EditApePage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   const { id, recordId } = await params;
+  await requirePermission("ape:manage", `/personnel/${id}`);
   const [profile, record, { error, values }] = await Promise.all([
     getPilotProfile(id),
     getApeRecord(id, recordId),
@@ -45,6 +47,7 @@ export default async function EditApePage({
             submitLabel="Save changes"
             error={error}
             hiddenFields={{ pilot_id: id, record_id: recordId }}
+            existingCertificate={record.certificate_name}
             defaultValues={
               preserved ?? {
                 last_ape_date: record.last_ape_date,

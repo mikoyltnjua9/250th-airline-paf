@@ -178,6 +178,9 @@ export type ApeRecord = {
   next_due_date: string;
   fit_to_fly: boolean;
   classification: string | null;
+  /** The attached medical certificate (a private file), if any. */
+  certificate_path: string | null;
+  certificate_name: string | null;
 };
 
 export type CurrencyItem = {

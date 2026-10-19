@@ -17,8 +17,10 @@ import {
 } from "@/lib/exams/admin-queries";
 import { formatManilaDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { requirePermission } from "@/lib/auth/require-permission";
 
 export default async function ExamManagementPage() {
+  await requirePermission("exams:manage");
   const [sets, held, recent, due] = await Promise.all([
     getExamSetsOverview(),
     getHeldQuestions(),
