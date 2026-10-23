@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
 
 const currencyFormSchema = z.object({
-  item_type: z.enum(["last_flight", "ifr", "night_proficiency", "peculiar_runways"]),
+  item_type: z.enum(["last_flight", "ifr", "night_proficiency", "peculiar_runways", "flight_simulator"]),
   last_date: z.string().trim().min(1, "Last date is required"),
   validity_days: z.coerce.number().int().positive("Validity window must be a positive number"),
   // Which aircraft this currency is for (empty = not tied to one).

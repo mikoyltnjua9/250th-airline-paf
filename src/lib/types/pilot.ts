@@ -6,7 +6,7 @@
 
 export type QualificationStatus = "current" | "expiring_soon" | "expired" | "in_training";
 export type FlightDuty = "PIC" | "SIC" | "IP" | "Student";
-export type CurrencyItemType = "last_flight" | "ifr" | "night_proficiency" | "peculiar_runways";
+export type CurrencyItemType = "last_flight" | "ifr" | "night_proficiency" | "peculiar_runways" | "flight_simulator";
 export type TrainingStatus = "completed" | "scheduled" | "overdue";
 export type StanevalStatus = "pass" | "fail";
 
@@ -102,6 +102,8 @@ export type Pilot = {
   skill_level: SkillLevel | null;
   contact_phone: string | null;
   contact_email: string | null;
+  /** Duty / qualification wording as the unit writes it ("C295 Flight Engineer"). */
+  designation: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -131,14 +133,14 @@ export function crewRolesForPosition(roles: CrewRole[], position: string): CrewR
   );
 }
 
-/** Currency requirements differ by position: everyone tracks Last Flight and
- * IFR; Fixed-Wing adds Peculiar Runways, Rotary adds Night Proficiency.
- * Other positions keep all four (no restriction is implied for them). */
+/** Currency requirements differ by position: everyone tracks Last Flight, IFR
+ * and Flight Simulator; Fixed-Wing adds Peculiar Runways, Rotary adds Night
+ * Proficiency. Other positions keep all five (no restriction is implied). */
 export function currencyItemTypesForPosition(position: string): CurrencyItemType[] {
   const category = aircraftCategoryForPosition(position);
-  if (category === "fixed_wing") return ["last_flight", "ifr", "peculiar_runways"];
-  if (category === "rotary") return ["last_flight", "ifr", "night_proficiency"];
-  return ["last_flight", "ifr", "night_proficiency", "peculiar_runways"];
+  if (category === "fixed_wing") return ["last_flight", "ifr", "peculiar_runways", "flight_simulator"];
+  if (category === "rotary") return ["last_flight", "ifr", "night_proficiency", "flight_simulator"];
+  return ["last_flight", "ifr", "night_proficiency", "peculiar_runways", "flight_simulator"];
 }
 
 // One row per (pilot, role) -- like CurrencyItem, not a history log.
@@ -200,6 +202,12 @@ export const CURRENCY_ITEM_LABELS: Record<CurrencyItemType, string> = {
   ifr: "IFR",
   night_proficiency: "Night Proficiency",
   peculiar_runways: "Peculiar Runways",
+  flight_simulator: "Flight Simulator",
+};
+
+/** Days a new currency record is valid unless told otherwise (the form can still change it). */
+export const DEFAULT_CURRENCY_VALIDITY_DAYS: Partial<Record<CurrencyItemType, number>> = {
+  flight_simulator: 365,
 };
 
 export type StanevalRecord = {

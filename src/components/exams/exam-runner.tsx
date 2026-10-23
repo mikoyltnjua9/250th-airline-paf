@@ -128,6 +128,15 @@ export function ExamRunner({ attemptId, title, category, skillLevel, questions, 
               <p className="mt-1 text-base leading-relaxed font-medium">{question.body}</p>
             </div>
 
+            {question.hasFigure ? (
+              // eslint-disable-next-line @next/next/no-img-element -- served through an access-checked route, not a static asset
+              <img
+                src={`/exams/figure/${question.id}`}
+                alt="Figure for this question"
+                className="max-h-72 w-auto rounded-md border bg-white"
+              />
+            ) : null}
+
             <div className="space-y-2" role="radiogroup" aria-label="Answer options">
               {question.options.map((option, i) => {
                 const selected = answers[question.id] === option.id;

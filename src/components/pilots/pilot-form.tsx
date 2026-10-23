@@ -15,6 +15,7 @@ export type PilotFormDefaults = Partial<{
   skill_level: string;
   contact_phone: string;
   contact_email: string;
+  designation: string;
 }>;
 
 export function PilotForm({
@@ -149,6 +150,15 @@ export function PilotForm({
                 </option>
               ))}
             </NativeSelect>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="designation">Designation</Label>
+            <Input
+              id="designation"
+              name="designation"
+              placeholder="Optional, e.g. C295 Flight Engineer"
+              defaultValue={defaultValues?.designation}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="contact_phone">Contact phone</Label>

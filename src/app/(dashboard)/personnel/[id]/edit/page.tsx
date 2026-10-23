@@ -55,6 +55,7 @@ export default async function EditPilotPage({
                 skill_level: pilot.skill_level ?? "",
                 contact_phone: pilot.contact_phone ?? "",
                 contact_email: pilot.contact_email ?? "",
+                designation: pilot.designation ?? "",
               }
             }
             currentPhotoUrl={pilot.photo_url}

@@ -218,6 +218,7 @@ export default async function PilotProfilePage({
                   {rankLabel} {pilot.full_name}
                 </h1>
                 <p className="text-muted-foreground">{pilot.position}</p>
+                {pilot.designation && <p className="text-sm font-medium">{pilot.designation}</p>}
               </div>
               <div className="flex flex-wrap items-center gap-6 text-sm">
                 <div>
@@ -278,8 +279,7 @@ export default async function PilotProfilePage({
       )}
 
       {/* Row 2: Authorized Equipment + Qualification Status (crew role) */}
-      {isPilot && (
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className={isPilot ? "grid grid-cols-1 gap-4 lg:grid-cols-2" : "grid grid-cols-1 gap-4"}>
         <Card>
           <CardHeader className="flex items-center justify-between">
             <CardTitle>Authorized Equipment</CardTitle>
@@ -323,6 +323,7 @@ export default async function PilotProfilePage({
           </CardContent>
         </Card>
 
+        {isPilot && (
         <Card>
           <CardHeader>
             <CardTitle>Qualification Status</CardTitle>
@@ -352,12 +353,12 @@ export default async function PilotProfilePage({
             </div>
           </CardContent>
         </Card>
+        )}
       </div>
-      )}
 
-      {/* Row 3: Flying Hours + APE Status */}
-      {isPilot && (
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      {/* Row 3: Flying Hours (pilots) + APE Status (everyone) */}
+      <div className={isPilot ? "grid grid-cols-1 gap-4 xl:grid-cols-2" : "grid grid-cols-1 gap-4"}>
+        {isPilot && (
         <Card>
           <CardHeader className="flex items-center justify-between">
             <div>
@@ -460,6 +461,7 @@ export default async function PilotProfilePage({
             )}
           </CardContent>
         </Card>
+        )}
 
         <Card>
           <CardHeader className="flex items-center justify-between">
@@ -538,7 +540,6 @@ export default async function PilotProfilePage({
           </CardContent>
         </Card>
       </div>
-      )}
 
       {/* Row 4: Currency Status + StanEval & Check */}
       <div className={isPilot ? "grid grid-cols-1 gap-4 xl:grid-cols-2" : "grid grid-cols-1 gap-4"}>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CurrencyForm } from "@/components/pilots/currency-form";
 import { getPilotProfile, getCurrencyItem } from "@/lib/pilots/queries";
 import { upsertCurrencyItem } from "@/app/(dashboard)/personnel/[id]/currency/actions";
-import { CURRENCY_ITEM_LABELS, type CurrencyItemType } from "@/lib/types/pilot";
+import { CURRENCY_ITEM_LABELS, DEFAULT_CURRENCY_VALIDITY_DAYS, type CurrencyItemType } from "@/lib/types/pilot";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
 import { requirePermission } from "@/lib/auth/require-permission";
 
@@ -73,7 +73,9 @@ export default async function CurrencyItemPage({
                     last_date: item.last_date,
                     validity_days: String(item.validity_days),
                   }
-                : undefined)
+                : DEFAULT_CURRENCY_VALIDITY_DAYS[validItemType]
+                  ? { validity_days: String(DEFAULT_CURRENCY_VALIDITY_DAYS[validItemType]) }
+                  : undefined)
             }
           />
         </CardContent>

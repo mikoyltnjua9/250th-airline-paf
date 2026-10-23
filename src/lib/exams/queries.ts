@@ -127,6 +127,8 @@ export async function getMyExams(personnelId: string): Promise<AssignedExam[]> {
 export type RunnerQuestion = {
   id: string;
   body: string;
+  /** True when the question has a picture to show (served by /exams/figure/[id]). */
+  hasFigure: boolean;
   options: { id: string; body: string }[];
 };
 
@@ -163,12 +165,12 @@ export async function getRunnerData(
 
   const { data: qs, error: qErr } = await admin
     .from("exam_questions")
-    .select("id, body, exam_options(id, body)")
+    .select("id, body, image_path, exam_options(id, body)")
     .eq("exam_set_id", attempt.exam_set_id);
   if (qErr) throw qErr;
 
   const byId = new Map(
-    ((qs ?? []) as unknown as { id: string; body: string; exam_options: { id: string; body: string }[] }[]).map(
+    ((qs ?? []) as unknown as { id: string; body: string; image_path: string | null; exam_options: { id: string; body: string }[] }[]).map(
       (q) => [q.id, q],
     ),
   );
@@ -181,6 +183,7 @@ export async function getRunnerData(
     questions.push({
       id: q.id,
       body: q.body,
+      hasFigure: !!q.image_path,
       options: item.opts.map((id) => optById.get(id)).filter((o): o is { id: string; body: string } => !!o),
     });
   }

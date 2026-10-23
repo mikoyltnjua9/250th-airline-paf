@@ -17,6 +17,11 @@ const pilotFormSchema = z.object({
     .enum(["", ...SKILL_LEVELS])
     .optional()
     .transform((v) => v || null),
+  designation: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => v || null),
   contact_phone: z
     .string()
     .trim()
