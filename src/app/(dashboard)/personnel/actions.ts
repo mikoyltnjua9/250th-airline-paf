@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
 import { POSITIONS, SKILL_LEVELS } from "@/lib/types/pilot";
 
@@ -15,6 +16,11 @@ const pilotFormSchema = z.object({
   fit_to_fly: z.enum(["true", "false"]).transform((v) => v === "true"),
   skill_level: z
     .enum(["", ...SKILL_LEVELS])
+    .optional()
+    .transform((v) => v || null),
+  unit_section: z
+    .string()
+    .trim()
     .optional()
     .transform((v) => v || null),
   designation: z
@@ -36,6 +42,15 @@ const pilotFormSchema = z.object({
       message: "Contact email must be a valid email address.",
     }),
 });
+
+/**
+ * A Unit Admin only ever works inside their own unit, whatever the form says
+ * (the database enforces it too; this keeps the saved value tidy).
+ */
+async function withAccountUnit<T extends { unit_section: string | null }>(data: T): Promise<T> {
+  const me = await getCurrentProfile();
+  return me?.role_code === "unit_admin" ? { ...data, unit_section: me.unit } : data;
+}
 
 function friendlyDbError(message: string): string {
   if (message.includes("afsn")) return "That AFSN is already in use by another pilot.";
@@ -101,7 +116,7 @@ export async function createPilot(formData: FormData) {
   const { data: pilot, error: pilotError } = await supabase
     .from("pilots")
     .insert({
-      ...parsed.data,
+      ...(await withAccountUnit(parsed.data)),
       created_by: user?.id,
       updated_by: user?.id,
     })
@@ -151,7 +166,7 @@ export async function updatePilot(formData: FormData) {
 
   const { error: pilotError } = await supabase
     .from("pilots")
-    .update({ ...parsed.data, updated_by: user?.id })
+    .update({ ...(await withAccountUnit(parsed.data)), updated_by: user?.id })
     .eq("id", pilotId);
 
   if (pilotError) {

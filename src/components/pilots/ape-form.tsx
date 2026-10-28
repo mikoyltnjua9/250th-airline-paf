@@ -20,6 +20,7 @@ export function ApeForm({
   hiddenFields,
   error,
   existingCertificate,
+  allowCertificate = true,
 }: {
   action: (formData: FormData) => void;
   submitLabel: string;
@@ -28,6 +29,8 @@ export function ApeForm({
   error?: string;
   /** File name of the certificate already attached to this record, if any. */
   existingCertificate?: string | null;
+  /** The medical certificate is the safety office's; other editors get no upload field. */
+  allowCertificate?: boolean;
 }) {
   return (
     <form action={action} className="space-y-6">
@@ -99,7 +102,7 @@ export function ApeForm({
             ))}
           </NativeSelect>
         </div>
-        <CertificateField existingName={existingCertificate} />
+        {allowCertificate && <CertificateField existingName={existingCertificate} />}
       </div>
 
       <div className="flex justify-end gap-3 border-t pt-6">

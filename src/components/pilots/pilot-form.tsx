@@ -16,10 +16,13 @@ export type PilotFormDefaults = Partial<{
   contact_phone: string;
   contact_email: string;
   designation: string;
+  unit_section: string;
 }>;
 
 export function PilotForm({
   ranks,
+  unitSuggestions = [],
+  lockedUnit = null,
   action,
   submitLabel,
   defaultValues,
@@ -28,6 +31,10 @@ export function PilotForm({
   currentPhotoUrl,
 }: {
   ranks: Rank[];
+  /** Units already in use, offered as suggestions on the Unit field. */
+  unitSuggestions?: string[];
+  /** A Unit Admin always works in their own unit: the field is fixed to it. */
+  lockedUnit?: string | null;
   action: (formData: FormData) => void;
   submitLabel: string;
   defaultValues?: PilotFormDefaults;
@@ -150,6 +157,26 @@ export function PilotForm({
                 </option>
               ))}
             </NativeSelect>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="unit_section">Unit</Label>
+            <Input
+              id="unit_section"
+              name="unit_section"
+              list={lockedUnit ? undefined : "unit-suggestions"}
+              placeholder="Optional, e.g. 251PAS"
+              defaultValue={lockedUnit ?? defaultValues?.unit_section}
+              readOnly={!!lockedUnit}
+            />
+            {lockedUnit ? (
+              <p className="text-xs text-muted-foreground">Your account only works with the {lockedUnit}.</p>
+            ) : (
+              <datalist id="unit-suggestions">
+                {unitSuggestions.map((unit) => (
+                  <option key={unit} value={unit} />
+                ))}
+              </datalist>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="designation">Designation</Label>

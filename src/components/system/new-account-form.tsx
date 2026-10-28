@@ -8,6 +8,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { createAccount, type CreateAccountState } from "@/app/(dashboard)/system/actions";
 import type { LinkablePerson, RoleRow } from "@/lib/system/queries";
+import { WING_UNITS } from "@/lib/units";
 
 const initialState: CreateAccountState = {};
 
@@ -88,6 +89,25 @@ export function NewAccountForm({
             ))}
           </NativeSelect>
         </div>
+        {role === "unit_admin" && (
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="unit">Unit</Label>
+            <NativeSelect id="unit" name="unit" defaultValue="" required>
+              <option value="" disabled>
+                Select the unit this account is for
+              </option>
+              {WING_UNITS.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </NativeSelect>
+            <p className="text-xs text-muted-foreground">
+              This login only sees and edits the people whose Unit is the same. Set each
+              person&apos;s Unit in the Directory first.
+            </p>
+          </div>
+        )}
         {role === "examinee" && (
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="personnel_id">Person</Label>

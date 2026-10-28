@@ -95,6 +95,8 @@ export type Pilot = {
   rank_code: string;
   afsn: string;
   position: string;
+  /** The person's unit (e.g. 251PAS). Stored in the older unit_section column. */
+  unit_section: string | null;
   photo_url: string | null;
   fit_to_fly: boolean;
   active: boolean;

@@ -2,10 +2,11 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PilotForm } from "@/components/pilots/pilot-form";
-import { getRanks } from "@/lib/pilots/queries";
+import { getRanks, getUnitSuggestions } from "@/lib/pilots/queries";
 import { createPilot } from "@/app/(dashboard)/personnel/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
 import { requirePermission } from "@/lib/auth/require-permission";
+import { getCurrentProfile } from "@/lib/auth/get-profile";
 
 export default async function NewPilotPage({
   searchParams,
@@ -13,7 +14,12 @@ export default async function NewPilotPage({
   searchParams: Promise<{ error?: string; values?: string }>;
 }) {
   await requirePermission("pilots:manage", "/personnel");
-  const [ranks, { error, values }] = await Promise.all([getRanks(), searchParams]);
+  const [ranks, unitSuggestions, { error, values }, me] = await Promise.all([
+    getRanks(),
+    getUnitSuggestions(),
+    searchParams,
+    getCurrentProfile(),
+  ]);
   const preserved = parsePreservedValues(values);
 
   return (
@@ -32,6 +38,8 @@ export default async function NewPilotPage({
         <CardContent>
           <PilotForm
             ranks={ranks}
+            unitSuggestions={unitSuggestions}
+            lockedUnit={me?.role_code === "unit_admin" ? me.unit : null}
             action={createPilot}
             submitLabel="Create pilot"
             error={error}

@@ -18,6 +18,7 @@ function matchesSearch(pilot: DirectoryRow, query: string): boolean {
     pilot.full_name.toLowerCase().includes(query) ||
     pilot.afsn.toLowerCase().includes(query) ||
     pilot.position.toLowerCase().includes(query) ||
+    (pilot.unit_section ?? "").toLowerCase().includes(query) ||
     rankLabel.toLowerCase().includes(query)
   );
 }
@@ -63,7 +64,10 @@ function PilotList({
             <p className="truncate font-medium">
               {pilot.ranks?.label ?? pilot.rank_code} {pilot.full_name}
             </p>
-            <p className="truncate text-xs text-muted-foreground">{pilot.afsn}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {pilot.afsn}
+              {pilot.unit_section ? ` · ${pilot.unit_section}` : ""}
+            </p>
           </div>
           {showReactivate ? (
             canManage ? (
@@ -112,7 +116,7 @@ export function PersonnelDirectory({
   return (
     <div className="space-y-4">
       <Input
-        placeholder="Search by name, rank, AFSN, or position…"
+        placeholder="Search by name, rank, AFSN, unit, or position…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="max-w-sm"

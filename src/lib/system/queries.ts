@@ -19,13 +19,15 @@ export type AccountRow = {
   createdAt: string;
   /** For examinee accounts: the personnel record this login represents. */
   personnelName: string | null;
+  /** For Unit Admin accounts: the unit they work with. */
+  unit: string | null;
 };
 
 export async function getAccounts(): Promise<AccountRow[]> {
   const supabase = await createClient();
   const { data: profiles, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role_code, created_at, personnel_id")
+    .select("id, full_name, role_code, created_at, personnel_id, unit")
     .order("full_name");
   if (error) throw error;
 
@@ -53,6 +55,7 @@ export async function getAccounts(): Promise<AccountRow[]> {
     roleCode: p.role_code,
     createdAt: p.created_at,
     personnelName: p.personnel_id ? (personnelNameById.get(p.personnel_id) ?? null) : null,
+    unit: p.unit,
   }));
 }
 

@@ -14,6 +14,7 @@ export type RoleCode =
   | "rotary_admin"
   | "fixed_wing_admin"
   | "safety_office"
+  | "unit_admin"
   | "examinee";
 
 export const ROLE_LABELS: Record<RoleCode, string> = {
@@ -21,6 +22,7 @@ export const ROLE_LABELS: Record<RoleCode, string> = {
   rotary_admin: "Rotary Wing Admin",
   fixed_wing_admin: "Fixed-Wing Admin",
   safety_office: "Safety Office Admin",
+  unit_admin: "Unit Admin",
   examinee: "Examinee",
 };
 
@@ -35,6 +37,7 @@ export type Permission =
   | "flights:manage"
   | "ape:view"
   | "ape:manage"
+  | "ape:certificate"
   | "currency:view"
   | "currency:manage"
   | "staneval:view"
@@ -76,10 +79,25 @@ const ROLE_PERMISSIONS: Record<RoleCode, Permission[] | "*"> = {
     ...VIEW_ALL,
     "qualifications:manage",
     "ape:manage",
+    "ape:certificate",
     "staneval:manage",
     "training:manage",
     "cbta:manage",
     "exams:manage",
+  ],
+
+  // A unit's own data-entry login (251st, 252nd, 480th, 481st): the people of
+  // that unit -- profile, qualifications, APE status, flights, currency. Which
+  // people is limited by the database (the account's unit must match the
+  // person's Unit). The medical certificate documents, StanEval, training,
+  // CBTA and exams stay with the safety office.
+  unit_admin: [
+    ...VIEW_ALL,
+    "pilots:manage",
+    "qualifications:manage",
+    "ape:manage",
+    "flights:manage",
+    "currency:manage",
   ],
 
   // Deliberately narrow: an examinee can take their own assigned exams and

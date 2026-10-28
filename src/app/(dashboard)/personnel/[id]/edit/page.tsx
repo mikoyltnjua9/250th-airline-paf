@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PilotForm } from "@/components/pilots/pilot-form";
-import { getPilotProfile, getRanks } from "@/lib/pilots/queries";
+import { getPilotProfile, getRanks, getUnitSuggestions } from "@/lib/pilots/queries";
 import { updatePilot } from "@/app/(dashboard)/personnel/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
 import { requirePermission } from "@/lib/auth/require-permission";
+import { getCurrentProfile } from "@/lib/auth/get-profile";
 
 export default async function EditPilotPage({
   params,
@@ -19,7 +20,12 @@ export default async function EditPilotPage({
   await requirePermission("pilots:manage", `/personnel/${id}`);
   const { error, values } = await searchParams;
   const preserved = parsePreservedValues(values);
-  const [profile, ranks] = await Promise.all([getPilotProfile(id), getRanks()]);
+  const [profile, ranks, unitSuggestions, me] = await Promise.all([
+    getPilotProfile(id),
+    getRanks(),
+    getUnitSuggestions(),
+    getCurrentProfile(),
+  ]);
 
   if (!profile) notFound();
 
@@ -41,6 +47,8 @@ export default async function EditPilotPage({
         <CardContent>
           <PilotForm
             ranks={ranks}
+            unitSuggestions={unitSuggestions}
+            lockedUnit={me?.role_code === "unit_admin" ? me.unit : null}
             action={updatePilot}
             submitLabel="Save changes"
             error={error}
@@ -56,6 +64,7 @@ export default async function EditPilotPage({
                 contact_phone: pilot.contact_phone ?? "",
                 contact_email: pilot.contact_email ?? "",
                 designation: pilot.designation ?? "",
+                unit_section: pilot.unit_section ?? "",
               }
             }
             currentPhotoUrl={pilot.photo_url}

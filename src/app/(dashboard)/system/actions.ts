@@ -7,12 +7,14 @@ import { generatePassword } from "@/lib/auth/generate-password";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { hasPermission } from "@/lib/permissions";
 import { personnelTypeForPosition } from "@/lib/types/pilot";
+import { WING_UNITS } from "@/lib/units";
 
 const createAccountSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required"),
   email: z.string().trim().email("Enter a valid email address"),
   role_code: z.string().trim().min(1, "Role is required"),
   personnel_id: z.string().trim().optional(),
+  unit: z.string().trim().optional(),
 });
 
 /**
@@ -55,7 +57,7 @@ export async function createAccount(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const { full_name, email, role_code, personnel_id } = parsed.data;
+  const { full_name, email, role_code, personnel_id, unit } = parsed.data;
   const admin = createAdminClient();
 
   // An examinee login exists to take exams for ONE personnel record, so it
@@ -76,6 +78,11 @@ export async function createAccount(
       .eq("personnel_id", personnel_id)
       .maybeSingle();
     if (existing) return { error: "That person already has a login." };
+  }
+
+  // A Unit Admin works with one unit's people, so it must be given one.
+  if (role_code === "unit_admin" && !(WING_UNITS as readonly string[]).includes(unit ?? "")) {
+    return { error: "Choose the unit this account is for." };
   }
 
   const password = generatePassword();
@@ -103,6 +110,14 @@ export async function createAccount(
       // Don't leave behind a login that isn't tied to anyone.
       await admin.auth.admin.deleteUser(created.user.id);
       return { error: "Couldn't link that login to the person: " + linkError.message };
+    }
+  }
+
+  if (role_code === "unit_admin") {
+    const { error: unitError } = await admin.from("profiles").update({ unit }).eq("id", created.user.id);
+    if (unitError) {
+      await admin.auth.admin.deleteUser(created.user.id);
+      return { error: "Couldn't set the account's unit: " + unitError.message };
     }
   }
 

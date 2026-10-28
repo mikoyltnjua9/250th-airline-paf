@@ -7,6 +7,8 @@ import { getPilotProfile } from "@/lib/pilots/queries";
 import { createApeRecord } from "@/app/(dashboard)/personnel/[id]/ape/actions";
 import { parsePreservedValues } from "@/lib/forms/error-redirect";
 import { requirePermission } from "@/lib/auth/require-permission";
+import { getCurrentProfile } from "@/lib/auth/get-profile";
+import { hasPermission } from "@/lib/permissions";
 
 export default async function NewApePage({
   params,
@@ -17,7 +19,11 @@ export default async function NewApePage({
 }) {
   const { id } = await params;
   await requirePermission("ape:manage", `/personnel/${id}`);
-  const [profile, { error, values }] = await Promise.all([getPilotProfile(id), searchParams]);
+  const [profile, { error, values }, me] = await Promise.all([
+    getPilotProfile(id),
+    searchParams,
+    getCurrentProfile(),
+  ]);
   const preserved = parsePreservedValues(values);
 
   if (!profile) notFound();
@@ -44,6 +50,7 @@ export default async function NewApePage({
             error={error}
             hiddenFields={{ pilot_id: id }}
             defaultValues={preserved}
+            allowCertificate={hasPermission(me?.role_code, "ape:certificate")}
           />
         </CardContent>
       </Card>

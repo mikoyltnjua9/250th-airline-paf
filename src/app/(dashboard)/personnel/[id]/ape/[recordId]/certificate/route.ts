@@ -15,7 +15,7 @@ export async function GET(
   const { id, recordId } = await params;
 
   const profile = await getCurrentProfile();
-  if (!profile || !hasPermission(profile.role_code, "ape:manage")) {
+  if (!profile || !hasPermission(profile.role_code, "ape:certificate")) {
     return new Response("Forbidden", { status: 403 });
   }
 

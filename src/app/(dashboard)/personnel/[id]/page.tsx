@@ -225,6 +225,12 @@ export default async function PilotProfilePage({
                   <p className="text-xs text-muted-foreground">AFSN</p>
                   <p className="font-medium">{pilot.afsn}</p>
                 </div>
+                {pilot.unit_section && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Unit</p>
+                    <p className="font-medium">{pilot.unit_section}</p>
+                  </div>
+                )}
                 {isPilot ? (
                   <FitToFlyBadge fitToFly={fitness.fit} reason={fitness.reason} />
                 ) : (
@@ -509,7 +515,7 @@ export default async function PilotProfilePage({
                     </div>
                     {canApe && (
                       <div className="flex shrink-0 items-center gap-2">
-                        {record.certificate_path && (
+                        {record.certificate_path && can("ape:certificate") && (
                           <Button asChild variant="outline" size="sm">
                             <a
                               href={`/personnel/${id}/ape/${record.id}/certificate`}

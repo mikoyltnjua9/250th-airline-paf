@@ -28,16 +28,21 @@ function withoutFile(formData: FormData) {
   return copy;
 }
 
-/** Only the safety office and super admin handle APE (the database agrees). */
+/**
+ * Who may change APE records (the database agrees). The medical certificate
+ * file is handled separately: only the safety office and super admin may
+ * attach, replace, open or remove it.
+ */
 async function requireApeManage() {
   const profile = await getCurrentProfile();
   if (!profile || !hasPermission(profile.role_code, "ape:manage")) {
     throw new Error("You don't have permission to change APE records.");
   }
+  return { canCertificate: hasPermission(profile.role_code, "ape:certificate") };
 }
 
 export async function createApeRecord(formData: FormData) {
-  await requireApeManage();
+  const { canCertificate } = await requireApeManage();
   const pilotId = String(formData.get("pilot_id") ?? "");
   const back = `/personnel/${pilotId}/ape/new`;
   const parsed = apeFormSchema.safeParse(Object.fromEntries(formData));
@@ -52,7 +57,7 @@ export async function createApeRecord(formData: FormData) {
   } = await supabase.auth.getUser();
 
   let certificate: { path: string; name: string } | null = null;
-  const file = certificateFromForm(formData);
+  const file = canCertificate ? certificateFromForm(formData) : null;
   if (file) {
     const problem = await checkCertificate(file);
     if (problem) redirectWithFormError(back, problem, withoutFile(formData));
@@ -97,7 +102,7 @@ export async function deleteApeRecord(pilotId: string, recordId: string) {
 }
 
 export async function updateApeRecord(formData: FormData) {
-  await requireApeManage();
+  const { canCertificate } = await requireApeManage();
   const pilotId = String(formData.get("pilot_id") ?? "");
   const recordId = String(formData.get("record_id") ?? "");
   const back = `/personnel/${pilotId}/ape/${recordId}/edit`;
@@ -122,7 +127,7 @@ export async function updateApeRecord(formData: FormData) {
   // leaves it alone.
   const patch: Record<string, string | null> = {};
   let uploaded: string | null = null;
-  const file = certificateFromForm(formData);
+  const file = canCertificate ? certificateFromForm(formData) : null;
   if (file) {
     const problem = await checkCertificate(file);
     if (problem) redirectWithFormError(back, problem, withoutFile(formData));
@@ -133,7 +138,7 @@ export async function updateApeRecord(formData: FormData) {
       patch.certificate_path = stored.path;
       patch.certificate_name = stored.name;
     }
-  } else if (formData.get("remove_certificate") === "on") {
+  } else if (canCertificate && formData.get("remove_certificate") === "on") {
     patch.certificate_path = null;
     patch.certificate_name = null;
   }

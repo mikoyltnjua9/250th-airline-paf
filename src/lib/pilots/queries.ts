@@ -1,4 +1,5 @@
 import "server-only";
+import { WING_UNITS } from "@/lib/units";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysIso, currentMonthBoundsInManila, formatIsoDate, todayInManila } from "@/lib/dates";
 import {
@@ -25,7 +26,7 @@ import type {
 
 export type DirectoryRow = Pick<
   Pilot,
-  "id" | "full_name" | "rank_code" | "afsn" | "fit_to_fly" | "photo_url" | "position" | "skill_level"
+  "id" | "full_name" | "rank_code" | "afsn" | "fit_to_fly" | "photo_url" | "position" | "skill_level" | "unit_section"
 > & {
   ranks: { label: string } | null;
   /** Manual flag combined with APE status -- what the badge should show. */
@@ -40,7 +41,7 @@ export async function getPilotDirectory(status: "active" | "inactive" = "active"
   const [pilotsRes, apeRes] = await Promise.all([
     supabase
       .from("pilots")
-      .select("id, full_name, rank_code, afsn, fit_to_fly, photo_url, position, skill_level, ranks(label)")
+      .select("id, full_name, rank_code, afsn, fit_to_fly, photo_url, position, skill_level, unit_section, ranks(label)")
       .eq("active", status === "active")
       .order("full_name"),
     supabase
@@ -345,6 +346,15 @@ export async function getCurrencyItem(
   ).maybeSingle();
   if (error) throw error;
   return data;
+}
+
+/** Units already in use, for the Unit field's suggestions (keeps spelling consistent). */
+export async function getUnitSuggestions(): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("pilots").select("unit_section").not("unit_section", "is", null);
+  if (error) throw error;
+  const used = (data ?? []).map((p) => p.unit_section as string).filter(Boolean);
+  return [...new Set([...WING_UNITS, ...used])].sort();
 }
 
 export async function getRanks(): Promise<Rank[]> {
