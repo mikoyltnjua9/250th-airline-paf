@@ -5,8 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { flash } from "@/lib/flash";
 
 /**
- * Crew-role qualifications are unique per (pilot_id, role_code) -- one row
- * per role per pilot, not a history log, same shape as currency_items.
+ * Crew-role qualifications are unique per (pilot_id, role_code, aircraft) --
+ * one row per role per aircraft per pilot, not a history log, same shape as
+ * currency_items. A pilot qualified on two aircraft keeps a separate set for
+ * each; a null aircraft is for a pilot with none on file yet.
  * Deliberately not using .upsert() here for the same reason as
  * upsertCurrencyItem: ON CONFLICT DO UPDATE would overwrite created_by on
  * every toggle of an already-existing row.
@@ -16,18 +18,26 @@ import { flash } from "@/lib/flash";
  * it's a single boolean per role, so a dedicated Add/Edit page would be
  * more friction than the data warrants.
  */
-export async function setCrewQualification(pilotId: string, roleCode: string, qualified: boolean) {
+export async function setCrewQualification(
+  pilotId: string,
+  roleCode: string,
+  aircraftTypeCode: string | null,
+  qualified: boolean,
+) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: existing } = await supabase
+  const existingQuery = supabase
     .from("pilot_crew_qualifications")
     .select("id")
     .eq("pilot_id", pilotId)
-    .eq("role_code", roleCode)
-    .maybeSingle();
+    .eq("role_code", roleCode);
+  const { data: existing } = await (aircraftTypeCode
+    ? existingQuery.eq("aircraft_type_code", aircraftTypeCode)
+    : existingQuery.is("aircraft_type_code", null)
+  ).maybeSingle();
 
   const { error } = existing
     ? await supabase
@@ -37,6 +47,7 @@ export async function setCrewQualification(pilotId: string, roleCode: string, qu
     : await supabase.from("pilot_crew_qualifications").insert({
         pilot_id: pilotId,
         role_code: roleCode,
+        aircraft_type_code: aircraftTypeCode,
         qualified,
         created_by: user?.id,
         updated_by: user?.id,

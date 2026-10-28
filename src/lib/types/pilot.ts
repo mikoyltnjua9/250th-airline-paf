@@ -145,11 +145,14 @@ export function currencyItemTypesForPosition(position: string): CurrencyItemType
   return ["last_flight", "ifr", "night_proficiency", "peculiar_runways", "flight_simulator"];
 }
 
-// One row per (pilot, role) -- like CurrencyItem, not a history log.
+// One row per (pilot, role, aircraft) -- like CurrencyItem, not a history log.
+// A pilot qualified on two aircraft has a separate set for each; null aircraft
+// = not tied to one (a pilot with no aircraft on file yet).
 export type PilotCrewQualification = {
   id: string;
   pilot_id: string;
   role_code: string;
+  aircraft_type_code: string | null;
   qualified: boolean;
 };
 

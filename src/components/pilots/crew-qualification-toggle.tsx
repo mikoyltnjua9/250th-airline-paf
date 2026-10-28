@@ -11,11 +11,14 @@ import { setCrewQualification } from "@/app/(dashboard)/personnel/[id]/crew-qual
 export function CrewQualificationToggle({
   pilotId,
   roleCode,
+  aircraftTypeCode,
   qualified,
   readOnly = false,
 }: {
   pilotId: string;
   roleCode: string;
+  /** The aircraft this status is for; null for a pilot with none on file. */
+  aircraftTypeCode: string | null;
   qualified: boolean;
   /** For accounts that may look but not change (shown as a plain badge). */
   readOnly?: boolean;
@@ -40,7 +43,7 @@ export function CrewQualificationToggle({
     <button
       type="button"
       disabled={isPending}
-      onClick={() => startTransition(() => setCrewQualification(pilotId, roleCode, !qualified))}
+      onClick={() => startTransition(() => setCrewQualification(pilotId, roleCode, aircraftTypeCode, !qualified))}
       className="disabled:opacity-60"
       title="Click to toggle"
     >

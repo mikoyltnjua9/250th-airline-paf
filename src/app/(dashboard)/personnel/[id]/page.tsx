@@ -165,6 +165,13 @@ export default async function PilotProfilePage({
     return groups;
   })();
   const visibleCrewRoles = crewRolesForPosition(crewRoles, pilot.position);
+  // Qualification Status is kept per aircraft too: one set for each aircraft the
+  // pilot is qualified on, or a single plain set while there is none yet.
+  const crewGroups: { code: string | null; label: string }[] = qualifications.length
+    ? [...new Map(qualifications.map((q) => [q.aircraft_type_code, q.aircraft_types?.label ?? q.aircraft_type_code])).entries()].map(
+        ([code, label]) => ({ code, label }),
+      )
+    : [{ code: null, label: "" }];
   const latestApe = apeRecords[0] ?? null;
   const fitness = effectiveFitness(pilot.fit_to_fly, latestApe);
   const latestStaneval = stanevalRecords[0] ?? null;
@@ -334,28 +341,41 @@ export default async function PilotProfilePage({
           <CardHeader>
             <CardTitle>Qualification Status</CardTitle>
             <CardDescription>
-              Crew role, independent of aircraft type.{canQualifications ? " Click to toggle." : ""}
+              {crewGroups.length > 1 ? "Crew role, tracked separately for each aircraft." : "Crew role."}
+              {canQualifications ? " Click to toggle." : ""}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {visibleCrewRoles.map((role) => {
-                const q = crewQualifications.find((cq) => cq.role_code === role.code);
-                return (
-                  <div
-                    key={role.code}
-                    className="flex items-center justify-between gap-2 rounded-lg border p-3"
-                  >
-                    <p className="font-medium">{role.label}</p>
-                    <CrewQualificationToggle
-                      pilotId={id}
-                      roleCode={role.code}
-                      qualified={q?.qualified ?? false}
-                      readOnly={!canQualifications}
-                    />
-                  </div>
-                );
-              })}
+            <div className="space-y-4">
+              {crewGroups.map((group) => (
+                <div key={group.code ?? "all"} className="space-y-2">
+                  {crewGroups.length > 1 && (
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {group.label}
+                    </p>
+                  )}
+                  {visibleCrewRoles.map((role) => {
+                    const q = crewQualifications.find(
+                      (cq) => cq.role_code === role.code && (cq.aircraft_type_code ?? null) === group.code,
+                    );
+                    return (
+                      <div
+                        key={role.code}
+                        className="flex items-center justify-between gap-2 rounded-lg border p-3"
+                      >
+                        <p className="font-medium">{role.label}</p>
+                        <CrewQualificationToggle
+                          pilotId={id}
+                          roleCode={role.code}
+                          aircraftTypeCode={group.code}
+                          qualified={q?.qualified ?? false}
+                          readOnly={!canQualifications}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
