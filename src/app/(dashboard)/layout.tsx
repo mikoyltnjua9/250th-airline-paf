@@ -4,6 +4,7 @@ import { isStaffRole, roleLabel } from "@/lib/permissions";
 import { Header } from "@/components/app-shell/header";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import { Footer } from "@/components/app-shell/footer";
+import { Flash } from "@/components/flash";
 
 export default async function DashboardLayout({
   children,
@@ -36,6 +37,7 @@ export default async function DashboardLayout({
           <Footer />
         </div>
       </div>
+      <Flash />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Crest } from "@/components/crest";
 import { Button } from "@/components/ui/button";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { signOut } from "@/lib/actions/auth";
+import { Flash } from "@/components/flash";
 
 /**
  * Deliberately separate from the wing dashboard shell: an examinee sees no
@@ -43,6 +44,7 @@ export default async function ExamsLayout({ children }: { children: React.ReactN
         </div>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 p-4 sm:p-6">{children}</main>
+      <Flash />
     </div>
   );
 }

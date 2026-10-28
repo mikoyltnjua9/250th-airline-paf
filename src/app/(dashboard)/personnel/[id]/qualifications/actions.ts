@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
+import { flash } from "@/lib/flash";
 
 const qualificationFormSchema = z.object({
   aircraft_type_code: z.string().trim().min(1, "Aircraft type is required"),
@@ -45,6 +46,8 @@ export async function createQualification(formData: FormData) {
     redirectWithFormError(`/personnel/${pilotId}/qualifications/new`, error.message, formData);
   }
 
+  await flash("Qualification saved");
+
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);
 }
@@ -53,6 +56,7 @@ export async function deleteQualification(pilotId: string, qualificationId: stri
   const supabase = await createClient();
   const { error } = await supabase.from("qualifications").delete().eq("id", qualificationId);
   if (error) throw error;
+  await flash("Qualification deleted");
   revalidatePath(`/personnel/${pilotId}`);
 }
 
@@ -90,6 +94,8 @@ export async function updateQualification(formData: FormData) {
       formData,
     );
   }
+
+  await flash("Qualification saved");
 
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);

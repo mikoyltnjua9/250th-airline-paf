@@ -8,6 +8,7 @@ import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { hasPermission } from "@/lib/permissions";
 import { personnelTypeForPosition } from "@/lib/types/pilot";
 import { WING_UNITS } from "@/lib/units";
+import { flash } from "@/lib/flash";
 
 const createAccountSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required"),
@@ -138,6 +139,8 @@ export async function deleteAccount(userId: string) {
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) throw error;
 
+  await flash("Account deleted");
+
   revalidatePath("/system");
 }
 
@@ -155,6 +158,8 @@ export async function renameAccount(userId: string, fullName: string): Promise<A
   const admin = createAdminClient();
   const { error } = await admin.from("profiles").update({ full_name: parsed.data }).eq("id", userId);
   if (error) return { error: error.message };
+
+  await flash("Account renamed");
 
   revalidatePath("/system");
   return {};
@@ -195,6 +200,8 @@ export async function resetAccountTwoFactor(userId: string): Promise<void> {
     const { error: delError } = await admin.auth.admin.mfa.deleteFactor({ id: factor.id, userId });
     if (delError) throw delError;
   }
+
+  await flash("Two-factor reset");
 
   revalidatePath("/system");
 }

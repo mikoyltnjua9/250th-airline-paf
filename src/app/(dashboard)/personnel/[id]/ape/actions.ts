@@ -13,6 +13,7 @@ import {
   removeCertificate,
   storeCertificate,
 } from "@/lib/ape/certificate";
+import { flash } from "@/lib/flash";
 
 const apeFormSchema = z.object({
   last_ape_date: z.string().trim().min(1, "Last APE date is required"),
@@ -83,6 +84,8 @@ export async function createApeRecord(formData: FormData) {
     redirectWithFormError(back, error.message, withoutFile(formData));
   }
 
+  await flash("APE record saved");
+
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);
 }
@@ -98,6 +101,7 @@ export async function deleteApeRecord(pilotId: string, recordId: string) {
   const { error } = await supabase.from("ape_records").delete().eq("id", recordId);
   if (error) throw error;
   await removeCertificate(supabase, existing?.certificate_path);
+  await flash("APE record deleted");
   revalidatePath(`/personnel/${pilotId}`);
 }
 
@@ -162,6 +166,8 @@ export async function updateApeRecord(formData: FormData) {
 
   // The old file is only deleted once the record points somewhere else.
   if ("certificate_path" in patch) await removeCertificate(supabase, existing?.certificate_path);
+
+  await flash("APE record saved");
 
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);

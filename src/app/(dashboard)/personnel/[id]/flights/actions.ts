@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
+import { flash } from "@/lib/flash";
 
 const flightFormSchema = z.object({
   flight_date: z.string().trim().min(1, "Flight date is required"),
@@ -45,6 +46,8 @@ export async function createFlight(formData: FormData) {
     redirectWithFormError(`/personnel/${pilotId}/flights/new`, error.message, formData);
   }
 
+  await flash("Flight saved");
+
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);
 }
@@ -53,6 +56,7 @@ export async function deleteFlight(pilotId: string, flightId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("flights").delete().eq("id", flightId);
   if (error) throw error;
+  await flash("Flight deleted");
   revalidatePath(`/personnel/${pilotId}`);
 }
 
@@ -85,6 +89,8 @@ export async function updateFlight(formData: FormData) {
   if (error) {
     redirectWithFormError(`/personnel/${pilotId}/flights/${flightId}/edit`, error.message, formData);
   }
+
+  await flash("Flight saved");
 
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);

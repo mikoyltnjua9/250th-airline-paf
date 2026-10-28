@@ -15,6 +15,7 @@ import {
   type CbtaMode,
   type GradeMap,
 } from "@/lib/cbta/competencies";
+import { flash } from "@/lib/flash";
 
 const COUNT_FIELDS = [
   "day_takeoff",
@@ -156,6 +157,8 @@ export async function createCbtaAssessment(formData: FormData) {
     redirectWithFormError(`/personnel/${pilotId}/cbta/new`, error.message, withoutSignatures(formData));
   }
 
+  await flash("CBTA slip saved");
+
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}/cbta/${data!.id}`);
 }
@@ -200,6 +203,8 @@ export async function updateCbtaAssessment(formData: FormData) {
     .eq("pilot_id", pilotId);
   if (error) redirectWithFormError(back, error.message, withoutSignatures(formData));
 
+  await flash("CBTA slip saved");
+
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}/cbta/${slipId}`);
 }
@@ -208,5 +213,6 @@ export async function deleteCbtaAssessment(pilotId: string, slipId: string) {
   const { supabase } = await requireAssessor(pilotId);
   const { error } = await supabase.from("cbta_assessments").delete().eq("id", slipId).eq("pilot_id", pilotId);
   if (error) throw error;
+  await flash("CBTA slip deleted");
   revalidatePath(`/personnel/${pilotId}`);
 }

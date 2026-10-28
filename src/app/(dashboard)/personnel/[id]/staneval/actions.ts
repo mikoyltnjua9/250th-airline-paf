@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
+import { flash } from "@/lib/flash";
 
 const stanevalFormSchema = z.object({
   eval_date: z.string().trim().min(1, "Evaluation date is required"),
@@ -44,6 +45,8 @@ export async function createStanevalRecord(formData: FormData) {
     redirectWithFormError(`/personnel/${pilotId}/staneval/new`, error.message, formData);
   }
 
+  await flash("StanEval record saved");
+
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);
 }
@@ -52,6 +55,7 @@ export async function deleteStanevalRecord(pilotId: string, recordId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("staneval_records").delete().eq("id", recordId);
   if (error) throw error;
+  await flash("StanEval record deleted");
   revalidatePath(`/personnel/${pilotId}`);
 }
 
@@ -87,6 +91,8 @@ export async function updateStanevalRecord(formData: FormData) {
   if (error) {
     redirectWithFormError(`/personnel/${pilotId}/staneval/${recordId}/edit`, error.message, formData);
   }
+
+  await flash("StanEval record saved");
 
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);

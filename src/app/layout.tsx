@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Public_Sans, JetBrains_Mono } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 // Public Sans — the typeface built for U.S. federal digital services
@@ -26,7 +27,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${publicSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Toaster position="top-center" richColors />
+      </body>
     </html>
   );
 }

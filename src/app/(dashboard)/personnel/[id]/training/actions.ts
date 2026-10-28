@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
+import { flash } from "@/lib/flash";
 
 const trainingFormSchema = z.object({
   training_type: z.string().trim().min(1, "Training type is required"),
@@ -42,6 +43,8 @@ export async function createTrainingRecord(formData: FormData) {
     redirectWithFormError(`/personnel/${pilotId}/training/new`, error.message, formData);
   }
 
+  await flash("Training record saved");
+
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);
 }
@@ -50,6 +53,7 @@ export async function deleteTrainingRecord(pilotId: string, recordId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("training_records").delete().eq("id", recordId);
   if (error) throw error;
+  await flash("Training record deleted");
   revalidatePath(`/personnel/${pilotId}`);
 }
 
@@ -84,6 +88,8 @@ export async function updateTrainingRecord(formData: FormData) {
   if (error) {
     redirectWithFormError(`/personnel/${pilotId}/training/${recordId}/edit`, error.message, formData);
   }
+
+  await flash("Training record saved");
 
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);

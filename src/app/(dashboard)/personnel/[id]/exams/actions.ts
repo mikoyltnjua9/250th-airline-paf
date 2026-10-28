@@ -6,6 +6,7 @@ import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { hasPermission } from "@/lib/permissions";
 import { personnelTypeForPosition } from "@/lib/types/pilot";
 import { examAudienceFor } from "@/lib/exams/audience";
+import { flash } from "@/lib/flash";
 
 async function requireExamsManage() {
   const profile = await getCurrentProfile();
@@ -67,6 +68,7 @@ async function reissue(personnelId: string, examSetId: string) {
     .from("exam_assignments")
     .insert({ personnel_id: personnelId, exam_set_id: examSetId, assigned_by: user?.id });
   if (error) throw error;
+  await flash("Exam assigned");
   revalidatePath(`/personnel/${personnelId}`);
 }
 
@@ -84,5 +86,6 @@ export async function unassignExam(personnelId: string, examSetId: string) {
     .eq("personnel_id", personnelId)
     .eq("exam_set_id", examSetId);
   if (error) throw error;
+  await flash("Exam removed");
   revalidatePath(`/personnel/${personnelId}`);
 }

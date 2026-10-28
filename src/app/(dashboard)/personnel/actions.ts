@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
 import { POSITIONS, SKILL_LEVELS } from "@/lib/types/pilot";
+import { flash } from "@/lib/flash";
 
 const pilotFormSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required"),
@@ -134,6 +135,8 @@ export async function createPilot(formData: FormData) {
     }
   }
 
+  await flash("Personnel record created");
+
   revalidatePath("/personnel");
   redirect(`/personnel/${pilot.id}`);
 }
@@ -180,6 +183,8 @@ export async function updatePilot(formData: FormData) {
     }
   }
 
+  await flash("Changes saved");
+
   revalidatePath("/personnel");
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);
@@ -195,6 +200,7 @@ export async function deactivatePilot(pilotId: string) {
     .update({ active: false, updated_by: user?.id })
     .eq("id", pilotId);
   if (error) throw error;
+  await flash("Personnel deactivated");
   revalidatePath("/personnel");
   revalidatePath(`/personnel/${pilotId}`);
 }
@@ -209,6 +215,7 @@ export async function reactivatePilot(pilotId: string) {
     .update({ active: true, updated_by: user?.id })
     .eq("id", pilotId);
   if (error) throw error;
+  await flash("Personnel reactivated");
   revalidatePath("/personnel");
   revalidatePath(`/personnel/${pilotId}`);
 }

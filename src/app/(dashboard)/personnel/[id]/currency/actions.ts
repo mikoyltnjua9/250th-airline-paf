@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
+import { flash } from "@/lib/flash";
 
 const currencyFormSchema = z.object({
   item_type: z.enum(["last_flight", "ifr", "night_proficiency", "peculiar_runways", "flight_simulator"]),
@@ -79,6 +80,8 @@ export async function upsertCurrencyItem(formData: FormData) {
     );
   }
 
+  await flash("Currency saved");
+
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);
 }
@@ -98,5 +101,6 @@ export async function deleteCurrencyItem(
     ? query.eq("aircraft_type_code", aircraftTypeCode)
     : query.is("aircraft_type_code", null));
   if (error) throw error;
+  await flash("Currency deleted");
   revalidatePath(`/personnel/${pilotId}`);
 }

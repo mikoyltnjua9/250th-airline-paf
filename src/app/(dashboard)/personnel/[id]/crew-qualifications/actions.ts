@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { flash } from "@/lib/flash";
 
 /**
  * Crew-role qualifications are unique per (pilot_id, role_code) -- one row
@@ -42,5 +43,6 @@ export async function setCrewQualification(pilotId: string, roleCode: string, qu
       });
 
   if (error) throw error;
+  await flash("Qualification status updated");
   revalidatePath(`/personnel/${pilotId}`);
 }

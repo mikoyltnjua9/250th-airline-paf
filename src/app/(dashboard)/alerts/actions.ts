@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { flash } from "@/lib/flash";
 
 /** Records that a specific alert was seen and is being handled. Doesn't
  * touch the underlying license/qualification/currency/APE/StanEval record —
@@ -21,6 +22,8 @@ export async function acknowledgeAlert(alertKey: string, pilotId: string, catego
   });
   if (error) throw error;
 
+  await flash("Alert acknowledged");
+
   revalidatePath("/alerts");
 }
 
@@ -28,6 +31,8 @@ export async function unacknowledgeAlert(alertKey: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("alert_acknowledgements").delete().eq("alert_key", alertKey);
   if (error) throw error;
+
+  await flash("Acknowledgement removed");
 
   revalidatePath("/alerts");
 }
