@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { PhotoInput } from "@/components/pilots/photo-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -72,13 +73,7 @@ export function PilotForm({
                   className="h-12 w-12"
                 />
               )}
-              <Input
-                id="photo"
-                name="photo"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="max-w-xs"
-              />
+              <PhotoInput />
             </div>
             {currentPhotoUrl && (
               <p className="text-xs text-muted-foreground">

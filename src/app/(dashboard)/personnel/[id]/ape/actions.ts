@@ -7,12 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { hasPermission } from "@/lib/permissions";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
-import {
-  certificateFromForm,
-  checkCertificate,
-  removeCertificate,
-  storeCertificate,
-} from "@/lib/ape/certificate";
+import { certificateFromForm, checkUploadedCertificate, removeCertificate } from "@/lib/ape/certificate";
 import { flash } from "@/lib/flash";
 
 const apeFormSchema = z.object({
@@ -22,10 +17,12 @@ const apeFormSchema = z.object({
   classification: z.string().trim().optional(),
 });
 
-/** The form's values without the uploaded file (a file can't ride in a URL). */
+/** The form's values without where the certificate file went (that is set by the upload field, not typed). */
 function withoutFile(formData: FormData) {
   const copy = new FormData();
-  for (const [key, value] of formData) if (typeof value === "string") copy.append(key, value);
+  for (const [key, value] of formData) {
+    if (typeof value === "string" && key !== "certificate_path" && key !== "certificate_name") copy.append(key, value);
+  }
   return copy;
 }
 
@@ -48,23 +45,21 @@ export async function createApeRecord(formData: FormData) {
   const back = `/personnel/${pilotId}/ape/new`;
   const parsed = apeFormSchema.safeParse(Object.fromEntries(formData));
 
+  const supabase = await createClient();
+  const certificate = canCertificate ? certificateFromForm(formData) : null;
+
   if (!parsed.success) {
+    await removeCertificate(supabase, certificate?.path);
     redirectWithFormError(back, parsed.error.issues[0]?.message ?? "Invalid input.", withoutFile(formData));
   }
 
-  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let certificate: { path: string; name: string } | null = null;
-  const file = canCertificate ? certificateFromForm(formData) : null;
-  if (file) {
-    const problem = await checkCertificate(file);
+  if (certificate) {
+    const problem = await checkUploadedCertificate(supabase, pilotId, certificate.path);
     if (problem) redirectWithFormError(back, problem, withoutFile(formData));
-    const stored = await storeCertificate(supabase, pilotId, file);
-    if ("error" in stored) redirectWithFormError(back, stored.error, withoutFile(formData));
-    else certificate = stored;
   }
 
   const { error } = await supabase.from("ape_records").insert({
@@ -112,11 +107,14 @@ export async function updateApeRecord(formData: FormData) {
   const back = `/personnel/${pilotId}/ape/${recordId}/edit`;
   const parsed = apeFormSchema.safeParse(Object.fromEntries(formData));
 
+  const supabase = await createClient();
+  const certificate = canCertificate ? certificateFromForm(formData) : null;
+
   if (!parsed.success) {
+    await removeCertificate(supabase, certificate?.path);
     redirectWithFormError(back, parsed.error.issues[0]?.message ?? "Invalid input.", withoutFile(formData));
   }
 
-  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -131,17 +129,12 @@ export async function updateApeRecord(formData: FormData) {
   // leaves it alone.
   const patch: Record<string, string | null> = {};
   let uploaded: string | null = null;
-  const file = canCertificate ? certificateFromForm(formData) : null;
-  if (file) {
-    const problem = await checkCertificate(file);
+  if (certificate) {
+    const problem = await checkUploadedCertificate(supabase, pilotId, certificate.path);
     if (problem) redirectWithFormError(back, problem, withoutFile(formData));
-    const stored = await storeCertificate(supabase, pilotId, file);
-    if ("error" in stored) redirectWithFormError(back, stored.error, withoutFile(formData));
-    else {
-      uploaded = stored.path;
-      patch.certificate_path = stored.path;
-      patch.certificate_name = stored.name;
-    }
+    uploaded = certificate.path;
+    patch.certificate_path = certificate.path;
+    patch.certificate_name = certificate.name;
   } else if (canCertificate && formData.get("remove_certificate") === "on") {
     patch.certificate_path = null;
     patch.certificate_name = null;

@@ -102,7 +102,9 @@ export function ApeForm({
             ))}
           </NativeSelect>
         </div>
-        {allowCertificate && <CertificateField existingName={existingCertificate} />}
+        {allowCertificate && hiddenFields?.pilot_id && (
+          <CertificateField pilotId={hiddenFields.pilot_id} existingName={existingCertificate} />
+        )}
       </div>
 
       <div className="flex justify-end gap-3 border-t pt-6">

@@ -2,63 +2,85 @@
 
 import { useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
+import { createClient } from "@/lib/supabase/client";
+import { shrinkImage } from "@/lib/image/shrink";
+import { CERTIFICATE_MAX_BYTES, CERTIFICATE_MAX_MB, CERTIFICATE_TYPES } from "@/lib/ape/certificate-limits";
 
-const MAX_BYTES = 4 * 1024 * 1024;
-const SHRINK_ABOVE = 1.5 * 1024 * 1024;
-const MAX_SIDE = 2000;
-
-/** Photos from a phone are often 5-10 MB: shrink them in the browser. */
-async function shrinkImage(file: File): Promise<File> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return file;
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.85));
-  if (!blob || blob.size >= file.size) return file;
-  return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
-}
+const BUCKET = "ape-certificates";
+const SHRINK_ABOVE = 6 * 1024 * 1024;
 
 /**
- * "Medical certificate" attachment for an APE record. When a certificate is
- * already on file, shows it and lets the user replace it or remove it.
+ * "Medical certificate" attachment for an APE record. The file goes straight
+ * from the browser to private storage the moment it's chosen (so its size
+ * isn't held back by the web server's request limit); the form then only
+ * carries where it was put, and the server checks it again on save. When a
+ * certificate is already on file, shows it and lets the user replace it or
+ * remove it.
  */
-export function CertificateField({ existingName }: { existingName?: string | null }) {
+export function CertificateField({
+  pilotId,
+  existingName,
+}: {
+  pilotId: string;
+  existingName?: string | null;
+}) {
   const input = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [picked, setPicked] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState<{ path: string; name: string; size: number } | null>(null);
+
+  // Blocks Save while the upload is still going.
+  function setBusy(busy: boolean) {
+    setUploading(busy);
+    input.current?.setCustomValidity(busy ? "Please wait for the certificate to finish uploading." : "");
+  }
+
+  async function discardUploaded() {
+    if (!uploaded) return;
+    const old = uploaded.path;
+    setUploaded(null);
+    await createClient().storage.from(BUCKET).remove([old]);
+  }
 
   async function onChange(e: React.ChangeEvent<HTMLInputElement>) {
     setMessage(null);
-    setPicked(null);
+    await discardUploaded();
     let file = e.target.files?.[0];
     if (!file) return;
-    if (!["application/pdf", "image/jpeg", "image/png"].includes(file.type)) {
+    const kind = CERTIFICATE_TYPES[file.type];
+    if (!kind) {
       setMessage("Please choose a PDF, JPG or PNG file.");
       e.target.value = "";
       return;
     }
-    if (file.type.startsWith("image/") && file.size > SHRINK_ABOVE) {
-      try {
-        file = await shrinkImage(file);
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        e.target.files = dt.files;
-      } catch {
-        /* keep the original; the size check below decides */
+    setBusy(true);
+    try {
+      if (file.type.startsWith("image/") && file.size > SHRINK_ABOVE) {
+        try {
+          file = await shrinkImage(file, 3000);
+        } catch {
+          /* keep the original; the size check below decides */
+        }
       }
+      if (file.size > CERTIFICATE_MAX_BYTES) {
+        setMessage(`That file is over ${CERTIFICATE_MAX_MB} MB. Please choose a smaller scan or photo.`);
+        e.target.value = "";
+        return;
+      }
+      const ext = CERTIFICATE_TYPES[file.type]?.ext ?? kind.ext;
+      const path = `${pilotId}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await createClient()
+        .storage.from(BUCKET)
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (error) {
+        setMessage(`Couldn't upload that file: ${error.message}`);
+        e.target.value = "";
+        return;
+      }
+      setUploaded({ path, name: file.name.slice(0, 120), size: file.size });
+    } finally {
+      setBusy(false);
     }
-    if (file.size > MAX_BYTES) {
-      setMessage("That file is over 4 MB. Please choose a smaller scan or photo.");
-      e.target.value = "";
-      return;
-    }
-    setPicked(`${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`);
   }
 
   return (
@@ -75,20 +97,31 @@ export function CertificateField({ existingName }: { existingName?: string | nul
           </label>
         </div>
       )}
+      {/* No name: the file itself never rides in the form, only where it went. */}
       <input
         ref={input}
         id="certificate"
-        name="certificate"
         type="file"
         accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
         onChange={onChange}
         className="block w-full text-sm file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-muted"
       />
+      {uploaded && (
+        <>
+          <input type="hidden" name="certificate_path" value={uploaded.path} />
+          <input type="hidden" name="certificate_name" value={uploaded.name} />
+        </>
+      )}
       <p className="text-xs text-muted-foreground">
-        PDF, JPG or PNG, up to 4 MB. {existingName ? "Choosing a file replaces the one on file. " : ""}
+        PDF, JPG or PNG, up to {CERTIFICATE_MAX_MB} MB. {existingName ? "Choosing a file replaces the one on file. " : ""}
         Only the Safety Office and super admins can open it.
       </p>
-      {picked && <p className="text-xs text-emerald-700 dark:text-emerald-400">Ready to upload: {picked}</p>}
+      {uploading && <p className="text-xs text-muted-foreground">Uploading…</p>}
+      {uploaded && (
+        <p className="text-xs text-emerald-700 dark:text-emerald-400">
+          Uploaded: {uploaded.name} ({(uploaded.size / 1024 / 1024).toFixed(1)} MB). It is attached when you save.
+        </p>
+      )}
       {message && <p className="text-xs text-red-600 dark:text-red-400">{message}</p>}
     </div>
   );

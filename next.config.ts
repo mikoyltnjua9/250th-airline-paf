@@ -4,8 +4,9 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   experimental: {
-    // APE medical certificates (up to 4 MB) arrive through a Server Action;
-    // the default cap is 1 MB.
+    // Person photos (shrunk in the browser first) arrive through a Server
+    // Action; the default cap is 1 MB. Medical certificates don't pass through
+    // here: they upload straight to storage.
     serverActions: { bodySizeLimit: "5mb" },
   },
   turbopack: {
