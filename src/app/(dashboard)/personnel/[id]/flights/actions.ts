@@ -6,6 +6,27 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { redirectWithFormError } from "@/lib/forms/error-redirect";
 import { flash } from "@/lib/flash";
+import { categoriesFromForm, updateCurrencyFromFlight } from "@/lib/currency/from-flight";
+
+/** Brings the pilot's currency up to date from the flight just saved, and says what changed. */
+async function currencyMessage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string | undefined,
+  pilotId: string,
+  parsed: { flight_date: string; aircraft_type_code: string },
+  formData: FormData,
+) {
+  const { data: person } = await supabase.from("pilots").select("position").eq("id", pilotId).maybeSingle();
+  const changed = await updateCurrencyFromFlight(supabase, userId, {
+    pilotId,
+    aircraftTypeCode: parsed.aircraft_type_code,
+    flightDate: parsed.flight_date,
+    position: person?.position ?? "",
+    categories: categoriesFromForm(formData),
+  });
+  if (changed === null) return "Flight saved, but the currency could not be updated";
+  return changed.length ? `Flight saved. Currency updated: ${changed.join(", ")}` : "Flight saved";
+}
 
 const flightFormSchema = z.object({
   flight_date: z.string().trim().min(1, "Flight date is required"),
@@ -46,7 +67,7 @@ export async function createFlight(formData: FormData) {
     redirectWithFormError(`/personnel/${pilotId}/flights/new`, error.message, formData);
   }
 
-  await flash("Flight saved");
+  await flash(await currencyMessage(supabase, user?.id, pilotId, parsed.data, formData));
 
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);
@@ -74,6 +95,9 @@ export async function updateFlight(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { error } = await supabase
     .from("flights")
@@ -90,7 +114,7 @@ export async function updateFlight(formData: FormData) {
     redirectWithFormError(`/personnel/${pilotId}/flights/${flightId}/edit`, error.message, formData);
   }
 
-  await flash("Flight saved");
+  await flash(await currencyMessage(supabase, user?.id, pilotId, parsed.data, formData));
 
   revalidatePath(`/personnel/${pilotId}`);
   redirect(`/personnel/${pilotId}`);

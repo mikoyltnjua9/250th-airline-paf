@@ -40,6 +40,7 @@ export default async function NewFlightPage({
         </CardHeader>
         <CardContent>
           <FlightForm
+            position={profile.pilot.position}
             aircraftTypes={aircraftTypes}
             action={createFlight}
             submitLabel="Save flight"

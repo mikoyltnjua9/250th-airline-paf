@@ -44,6 +44,7 @@ import { formatIsoDate } from "@/lib/dates";
 import { getPersonExams, getRecentAttempts } from "@/lib/exams/admin-queries";
 import { deactivatePilot } from "@/app/(dashboard)/personnel/actions";
 import { deleteQualification } from "@/app/(dashboard)/personnel/[id]/qualifications/actions";
+import { deleteEquipmentAuthorization } from "@/app/(dashboard)/personnel/[id]/equipment/actions";
 import { deleteCurrencyItem } from "@/app/(dashboard)/personnel/[id]/currency/actions";
 import { deleteApeRecord } from "@/app/(dashboard)/personnel/[id]/ape/actions";
 import { deleteFlight } from "@/app/(dashboard)/personnel/[id]/flights/actions";
@@ -128,6 +129,8 @@ export default async function PilotProfilePage({
     trainingRecords,
     crewRoles,
     crewQualifications,
+    equipmentTypes,
+    equipmentAuthorizations,
   } = profile;
 
   // The pilot-only panels (flying, APE, currency, equipment, crew roles, duty
@@ -164,6 +167,13 @@ export default async function PilotProfilePage({
     }
     return groups;
   })();
+  // Ground support equipment a person is authorized to operate: shown for
+  // maintenance staff and others on the ground, and for anyone who has some.
+  const showGroundEquipment =
+    personnelType === "maintenance" || personnelType === "other" || equipmentAuthorizations.length > 0;
+  const groundEquipment = equipmentAuthorizations
+    .map((a) => ({ auth: a, type: equipmentTypes.find((t) => t.code === a.equipment_code) }))
+    .sort((a, b) => (a.type?.sort_order ?? 0) - (b.type?.sort_order ?? 0));
   const visibleCrewRoles = crewRolesForPosition(crewRoles, pilot.position);
   // Qualification Status is kept per aircraft too: one set for each aircraft the
   // pilot is qualified on, or a single plain set while there is none yet.
@@ -381,6 +391,53 @@ export default async function PilotProfilePage({
         </Card>
         )}
       </div>
+
+      {/* Ground support equipment the person may operate (after a seminar) */}
+      {showGroundEquipment && (
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <div>
+              <CardTitle>Authorized Ground Equipment</CardTitle>
+              <CardDescription>Ground support equipment this person is authorized to operate.</CardDescription>
+            </div>
+            {canQualifications && (
+              <Button asChild size="sm">
+                <Link href={`/personnel/${id}/equipment/new`}>Authorize Equipment</Link>
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {groundEquipment.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No ground equipment authorized yet.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {groundEquipment.map(({ auth, type }) => (
+                  <div key={auth.id} className="flex items-start justify-between gap-2 rounded-lg border p-3">
+                    <div className="min-w-0">
+                      <p className="font-medium">{type?.label ?? auth.equipment_code}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Seminar{" "}
+                        {auth.seminar_date
+                          ? formatIsoDate(auth.seminar_date, { month: "short", day: "numeric", year: "numeric" })
+                          : "date not on file"}
+                      </p>
+                    </div>
+                    {canQualifications && (
+                      <ConfirmActionButton
+                        onConfirm={deleteEquipmentAuthorization.bind(null, id, auth.id)}
+                        triggerLabel="Remove"
+                        title="Remove this authorization?"
+                        description="The person will no longer be listed as authorized to operate this equipment."
+                        confirmLabel="Remove"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Row 3: Flying Hours (pilots) + APE Status (everyone) */}
       <div className={isPilot ? "grid grid-cols-1 gap-4 xl:grid-cols-2" : "grid grid-cols-1 gap-4"}>

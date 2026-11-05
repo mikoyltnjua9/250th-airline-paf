@@ -6,7 +6,9 @@ import {
   currencyItemTypesForPosition,
   NON_PILOT_POSITIONS_FILTER,
   CURRENCY_ITEM_LABELS,
+  PERSONNEL_CLASSES,
   type CurrencyItemType,
+  type PersonnelClassKey,
   type QualificationStatus,
 } from "@/lib/types/pilot";
 
@@ -34,7 +36,13 @@ export type CurrencySummaryRow = {
   expired: number;
 };
 
+export type PersonnelClassCount = { key: PersonnelClassKey; label: string; count: number };
+
 export type DashboardOverview = {
+  /** Everyone active -- pilots, maintenance, flight attendants and the rest. */
+  totalPersonnel: number;
+  /** Active people in each classification (Pilots, Fixed-Wing Pilots, ...). */
+  personnelByClass: PersonnelClassCount[];
   totalPilots: number;
   fullyMissionReady: number;
   alerts: DashboardAlert[];
@@ -45,12 +53,13 @@ export type DashboardOverview = {
 export async function getDashboardOverview(): Promise<DashboardOverview> {
   const supabase = await createClient();
 
-  const [pilotsRes, qualsRes, aircraftTypesRes, currencyRes, alerts] = await Promise.all([
+  const [pilotsRes, everyoneRes, qualsRes, aircraftTypesRes, currencyRes, alerts] = await Promise.all([
     supabase
       .from("pilots")
       .select("id, position")
       .eq("active", true)
       .not("position", "in", NON_PILOT_POSITIONS_FILTER),
+    supabase.from("pilots").select("position").eq("active", true).limit(5000),
     supabase.from("qualifications").select("pilot_id, status, aircraft_type_code"),
     // Retired aircraft (Fokker F28, N-22B Nomad) stay out of the wing-wide summary.
     supabase.from("aircraft_types").select("code, label").eq("active", true).order("sort_order"),
@@ -59,13 +68,22 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
   ]);
 
   if (pilotsRes.error) throw pilotsRes.error;
+  if (everyoneRes.error) throw everyoneRes.error;
   if (qualsRes.error) throw qualsRes.error;
   if (aircraftTypesRes.error) throw aircraftTypesRes.error;
   if (currencyRes.error) throw currencyRes.error;
 
   const pilots = pilotsRes.data ?? [];
   const activePilotIds = new Set(pilots.map((p) => p.id));
-  const pilotsWithAlerts = new Set(alerts.map((a) => a.pilotId));
+  // Alerts now include APE for everyone; mission-readiness is still about pilots.
+  const pilotsWithAlerts = new Set(alerts.map((a) => a.pilotId).filter((id) => activePilotIds.has(id)));
+
+  const everyone = (everyoneRes.data ?? []) as { position: string }[];
+  const personnelByClass = PERSONNEL_CLASSES.map((c) => ({
+    key: c.key,
+    label: c.label,
+    count: everyone.filter((p) => c.positions.includes(p.position)).length,
+  }));
 
   // --- qualification summary, by aircraft type -----------------------------
   // Filtered to active pilots -- qualsRes/currencyRes below aren't scoped by
@@ -115,6 +133,8 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
   });
 
   return {
+    totalPersonnel: everyone.length,
+    personnelByClass,
     totalPilots: pilots.length,
     fullyMissionReady: pilots.length - pilotsWithAlerts.size,
     alerts,

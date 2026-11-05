@@ -1,6 +1,7 @@
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { StatTile } from "@/components/stat-tile";
 import { AlertsCard } from "@/components/dashboard/alerts-card";
+import { PersonnelByClassCard } from "@/components/dashboard/personnel-by-class-card";
 import { QualificationsCard } from "@/components/dashboard/qualifications-card";
 import { CurrencyCard } from "@/components/dashboard/currency-card";
 import { WorkloadCard } from "@/components/dashboard/workload-card";
@@ -28,7 +29,11 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatTile label="Total Pilots" value={overview.totalPilots} />
+        <StatTile
+          label="Total Personnel"
+          value={overview.totalPersonnel}
+          hint={`${overview.totalPilots} pilots`}
+        />
         <StatTile
           label="Fully Mission-Ready"
           value={overview.fullyMissionReady}
@@ -47,6 +52,8 @@ export default async function DashboardPage() {
           hint="wing total, last 30 days"
         />
       </div>
+
+      <PersonnelByClassCard rows={overview.personnelByClass} total={overview.totalPersonnel} />
 
       <AlertsCard alerts={overview.alerts} />
 

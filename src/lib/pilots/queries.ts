@@ -22,6 +22,8 @@ import type {
   AircraftType,
   CrewRole,
   PilotCrewQualification,
+  EquipmentType,
+  EquipmentAuthorization,
 } from "@/lib/types/pilot";
 
 export type DirectoryRow = Pick<
@@ -132,6 +134,10 @@ export type PilotProfile = {
   trainingRecords: TrainingRecord[];
   crewRoles: CrewRole[];
   crewQualifications: PilotCrewQualification[];
+  /** Every piece of ground equipment that can be authorized (for the form). */
+  equipmentTypes: EquipmentType[];
+  /** What this person is authorized to operate, with the seminar date. */
+  equipmentAuthorizations: EquipmentAuthorization[];
 };
 
 export async function getPilotProfile(id: string): Promise<PilotProfile | null> {
@@ -149,6 +155,8 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
     trainingRes,
     crewRolesRes,
     crewQualsRes,
+    equipmentTypesRes,
+    equipmentAuthsRes,
   ] = await Promise.all([
     supabase.from("pilots").select("*").eq("id", id).maybeSingle(),
     supabase.from("pilots").select("rank_code, ranks(label)").eq("id", id).maybeSingle(),
@@ -187,6 +195,8 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
       .order("training_date", { ascending: false }),
     supabase.from("crew_roles").select("*").order("sort_order"),
     supabase.from("pilot_crew_qualifications").select("*").eq("pilot_id", id),
+    supabase.from("equipment_types").select("*").eq("active", true).order("sort_order"),
+    supabase.from("equipment_authorizations").select("*").eq("pilot_id", id),
   ]);
 
   if (pilotRes.error) throw pilotRes.error;
@@ -214,6 +224,8 @@ export async function getPilotProfile(id: string): Promise<PilotProfile | null> 
     trainingRecords: (trainingRes.data ?? []) as TrainingRecord[],
     crewRoles: (crewRolesRes.data ?? []) as CrewRole[],
     crewQualifications: (crewQualsRes.data ?? []) as PilotCrewQualification[],
+    equipmentTypes: (equipmentTypesRes.data ?? []) as EquipmentType[],
+    equipmentAuthorizations: (equipmentAuthsRes.data ?? []) as EquipmentAuthorization[],
   };
 }
 

@@ -59,6 +59,31 @@ export const NON_PILOT_POSITIONS = [
  * of pilot-only views (alerts, dashboard counts, workload, reports). */
 export const NON_PILOT_POSITIONS_FILTER = `(${NON_PILOT_POSITIONS.map((p) => `"${p}"`).join(",")})`;
 
+/**
+ * The groups the wing sorts its people into, as the client lists them. "Pilots"
+ * is both kinds of pilot together; the rest are one position each.
+ */
+export type PersonnelClassKey =
+  | "pilots"
+  | "fixed_wing"
+  | "rotary"
+  | "maintenance_officers"
+  | "maintenance_personnel"
+  | "flight_attendants";
+
+export const PERSONNEL_CLASSES: { key: PersonnelClassKey; label: string; positions: string[] }[] = [
+  { key: "pilots", label: "Pilots", positions: ["Fixed-Wing Pilot", "Rotary Pilot"] },
+  { key: "fixed_wing", label: "Fixed-Wing Pilots", positions: ["Fixed-Wing Pilot"] },
+  { key: "rotary", label: "Rotary Pilots", positions: ["Rotary Pilot"] },
+  { key: "maintenance_officers", label: "Maintenance Officers", positions: ["Maintenance Officer"] },
+  { key: "maintenance_personnel", label: "Maintenance Personnel", positions: ["Maintenance Technician"] },
+  { key: "flight_attendants", label: "Flight Attendants", positions: ["Flight Attendant"] },
+];
+
+export function isPersonnelClassKey(value: string | undefined): value is PersonnelClassKey {
+  return PERSONNEL_CLASSES.some((c) => c.key === value);
+}
+
 export const SKILL_LEVELS = ["3rd", "5th", "7th"] as const;
 export type SkillLevel = (typeof SKILL_LEVELS)[number];
 
@@ -165,6 +190,23 @@ export type Qualification = {
   expiry_date: string | null;
 };
 
+// Ground support equipment (GPUs, tugs, carts...) a person has been authorized
+// to operate after a seminar. Fixed lookup like ranks/aircraft_types; one
+// authorization row per (person, equipment) with the seminar date.
+export type EquipmentType = {
+  code: string;
+  label: string;
+  sort_order: number;
+  active: boolean;
+};
+
+export type EquipmentAuthorization = {
+  id: string;
+  pilot_id: string;
+  equipment_code: string;
+  seminar_date: string | null;
+};
+
 export type Flight = {
   id: string;
   pilot_id: string;
@@ -211,7 +253,13 @@ export const CURRENCY_ITEM_LABELS: Record<CurrencyItemType, string> = {
 };
 
 /** Days a new currency record is valid unless told otherwise (the form can still change it). */
+// Last Flight / IFR / Night match the windows already on file. Peculiar Runways
+// has none on file yet: 90 days is an assumption until the client confirms it.
 export const DEFAULT_CURRENCY_VALIDITY_DAYS: Partial<Record<CurrencyItemType, number>> = {
+  last_flight: 45,
+  ifr: 90,
+  night_proficiency: 90,
+  peculiar_runways: 90,
   flight_simulator: 365,
 };
 

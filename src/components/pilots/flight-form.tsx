@@ -3,7 +3,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { AircraftType } from "@/lib/types/pilot";
+import { CURRENCY_ITEM_LABELS, currencyItemTypesForPosition, type AircraftType } from "@/lib/types/pilot";
+import { FLIGHT_CURRENCY_CATEGORIES } from "@/lib/currency/from-flight-categories";
 
 export type FlightFormDefaults = Partial<{
   flight_date: string;
@@ -14,6 +15,7 @@ export type FlightFormDefaults = Partial<{
 }>;
 
 export function FlightForm({
+  position,
   aircraftTypes,
   action,
   submitLabel,
@@ -21,6 +23,8 @@ export function FlightForm({
   hiddenFields,
   error,
 }: {
+  /** The person's position: decides which currency categories a flight can count toward. */
+  position: string;
   aircraftTypes: AircraftType[];
   action: (formData: FormData) => void;
   submitLabel: string;
@@ -102,6 +106,22 @@ export function FlightForm({
           />
         </div>
       </div>
+
+      <fieldset className="space-y-2 rounded-lg border p-4">
+        <legend className="px-1 text-sm font-medium">Counts toward currency</legend>
+        <p className="text-xs text-muted-foreground">
+          The flight date always updates Last Flight for this aircraft. Tick anything else this flight counted for.
+          A currency date only ever moves forward.
+        </p>
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          {FLIGHT_CURRENCY_CATEGORIES.filter((c) => currencyItemTypesForPosition(position).includes(c)).map((c) => (
+            <label key={c} className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name={`counts_${c}`} />
+              {CURRENCY_ITEM_LABELS[c]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <div className="flex justify-end gap-3 border-t pt-6">
         <Button type="submit">{submitLabel}</Button>

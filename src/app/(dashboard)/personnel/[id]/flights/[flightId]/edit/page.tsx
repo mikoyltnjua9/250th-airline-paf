@@ -47,6 +47,7 @@ export default async function EditFlightPage({
         </CardHeader>
         <CardContent>
           <FlightForm
+            position={profile.pilot.position}
             aircraftTypes={aircraftTypes}
             action={updateFlight}
             submitLabel="Save changes"

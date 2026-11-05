@@ -4,8 +4,14 @@ import { PersonnelDirectory } from "@/components/pilots/personnel-directory";
 import { getPilotDirectory } from "@/lib/pilots/queries";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { hasPermission } from "@/lib/permissions";
+import { isPersonnelClassKey } from "@/lib/types/pilot";
 
-export default async function PersonnelPage() {
+export default async function PersonnelPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ class?: string }>;
+}) {
+  const { class: classParam } = await searchParams;
   const [activePilots, inactivePilots, me] = await Promise.all([
     getPilotDirectory("active"),
     getPilotDirectory("inactive"),
@@ -23,7 +29,7 @@ export default async function PersonnelPage() {
         </div>
         {canManage && (
           <Button asChild>
-            <Link href="/personnel/new">Add Pilot</Link>
+            <Link href="/personnel/new">Add Personnel</Link>
           </Button>
         )}
       </div>
@@ -32,6 +38,7 @@ export default async function PersonnelPage() {
         activePilots={activePilots}
         inactivePilots={inactivePilots}
         canManage={canManage}
+        initialClass={isPersonnelClassKey(classParam) ? classParam : undefined}
       />
     </div>
   );

@@ -5,7 +5,7 @@ import {
   currencyExpiryDate,
   currencyItemTypesForPosition,
   effectiveFitness,
-  NON_PILOT_POSITIONS_FILTER,
+  NON_PILOT_POSITIONS,
   CURRENCY_ITEM_LABELS,
   type CurrencyItemType,
   type QualificationStatus,
@@ -54,7 +54,7 @@ export async function getAlerts(): Promise<Alert[]> {
       .from("pilots")
       .select("id, full_name, rank_code, position, fit_to_fly, ranks(label)")
       .eq("active", true)
-      .not("position", "in", NON_PILOT_POSITIONS_FILTER)
+      .limit(5000)
       .order("full_name"),
     supabase
       .from("qualifications")
@@ -81,7 +81,7 @@ export async function getAlerts(): Promise<Alert[]> {
   if (apeRes.error) throw apeRes.error;
   if (stanevalRes.error) throw stanevalRes.error;
 
-  const pilots = (pilotsRes.data ?? []) as unknown as {
+  const people = (pilotsRes.data ?? []) as unknown as {
     id: string;
     full_name: string;
     rank_code: string;
@@ -90,8 +90,13 @@ export async function getAlerts(): Promise<Alert[]> {
     ranks: { label: string } | null;
   }[];
 
+  // Qualification, currency, fitness and StanEval alerts are about pilots; only
+  // the APE check (below) also covers maintenance staff, flight attendants and
+  // the rest, who each have a medical to keep up.
+  const pilots = people.filter((p) => !NON_PILOT_POSITIONS.includes(p.position as never));
+
   const pilotName = (pilotId: string) => {
-    const p = pilots.find((row) => row.id === pilotId);
+    const p = people.find((row) => row.id === pilotId);
     if (!p) return "Unknown pilot";
     return `${p.ranks?.label ?? p.rank_code} ${p.full_name}`;
   };
@@ -101,6 +106,7 @@ export async function getAlerts(): Promise<Alert[]> {
   // pilot at all -- this keeps a deactivated pilot's old records from still
   // generating alerts wing-wide.
   const activePilotIds = new Set(pilots.map((p) => p.id));
+  const activePersonIds = new Set(people.map((p) => p.id));
 
   const alerts: Alert[] = [];
 
@@ -213,7 +219,7 @@ export async function getAlerts(): Promise<Alert[]> {
 
   // --- APE (most recent per pilot) -----------------------------------------
   for (const [pilotId, ape] of latestApe) {
-    if (!activePilotIds.has(pilotId)) continue;
+    if (!activePersonIds.has(pilotId)) continue;
     if (!ape.fit_to_fly) {
       pushAlert(pilotId, "ape", "", "Not fit to fly", ape.next_due_date, "expired");
       continue;
